@@ -20,3 +20,9 @@ type DoFile struct {
 	Let Let `json:"let"`
 	Do  Do  `json:"do"`
 }
+
+type Response struct {
+	StatusCode int                    `json:"status_code"`
+	Body       string                 `json:"body"`
+	Headers    map[string]interface{} `json:"headers"`
+}

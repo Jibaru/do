@@ -1,7 +1,6 @@
 package request
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,7 +10,7 @@ import (
 )
 
 type HttpClient interface {
-	Do(doFile types.DoFile) (*http.Response, error)
+	Do(doFile types.DoFile) (*types.Response, error)
 }
 
 type httpClient struct {
@@ -24,7 +23,7 @@ func NewHttpClient(client *http.Client) HttpClient {
 	}
 }
 
-func (h *httpClient) Do(doFile types.DoFile) (*http.Response, error) {
+func (h *httpClient) Do(doFile types.DoFile) (*types.Response, error) {
 	// Replace params
 	url := doFile.Do.URL
 	for key, value := range doFile.Do.Params {
@@ -48,12 +47,29 @@ func (h *httpClient) Do(doFile types.DoFile) (*http.Response, error) {
 	req.URL.RawQuery = query.Encode()
 
 	if doFile.Do.Body != "" {
-		bodyBytes, err := json.Marshal(doFile.Do.Body)
-		if err != nil {
-			return nil, err
-		}
-		req.Body = io.NopCloser(strings.NewReader(string(bodyBytes)))
+		req.Body = io.NopCloser(strings.NewReader(doFile.Do.Body))
 	}
 
-	return h.client.Do(req)
+	res, err := h.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	respBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get response headers
+	headers := make(map[string]interface{})
+	for key, value := range res.Header {
+		headers[key] = value
+	}
+
+	return &types.Response{
+		StatusCode: res.StatusCode,
+		Body:       string(respBody),
+		Headers:    headers,
+	}, nil
 }
