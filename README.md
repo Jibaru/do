@@ -24,7 +24,7 @@ The let section is used to declare variables that can be referenced in the do se
 
 ```do
 let {
-    variableName = value
+    variableName = "value";
     // Add more variables here...
 }
 ```
@@ -35,12 +35,12 @@ The do section specifies the HTTP request to be executed. It contains various fi
 
 ```do
 do {
-    method = "POST"
-    url = "https://api.example.com/users/:id"
-    params = {"id": "$userId"}
-    query = {"token": "$token"}
-    headers = {"Authorization": "Bearer $token", "Content-Type": "application/json"}
-    body = {"name": "John Doe", "email": "john@example.com"}
+    method = "POST";
+    url = "https://api.example.com/users/:id";
+    params = {"id": "$userId"};
+    query = {"token": "$token"};
+    headers = {"Authorization": "Bearer $token", "Content-Type": "application/json"};
+    body = `{"name": "John Doe", "email": "john@example.com"}`
 }
 ```
 
