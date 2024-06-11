@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jibaru/do/internal/reader"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -34,21 +33,15 @@ func main() {
 		return
 	}
 
-	doFileAsJson, _ := json.Marshal(doFile)
-	fmt.Printf("response: %s\n", string(doFileAsJson))
+	doFileAsJson, _ := json.MarshalIndent(doFile, "", "   ")
+	fmt.Printf("request: %s\n", string(doFileAsJson))
 
-	resp, err := client.Do(*doFile)
+	response, err := client.Do(*doFile)
 	if err != nil {
 		fmt.Printf("error in request: %v\n", err)
 		return
 	}
-	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Printf("error reading response: %v\n", err)
-		return
-	}
-
-	fmt.Printf("response: %s\n", body)
+	responseAsJson, _ := json.MarshalIndent(response, "", "   ")
+	fmt.Printf("response: %s\n", string(responseAsJson))
 }
