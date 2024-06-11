@@ -10,9 +10,21 @@ import (
 	"github.com/jibaru/do/internal/types"
 )
 
-func Do(doFile types.DoFile) (*http.Response, error) {
-	client := &http.Client{}
+type HttpClient interface {
+	Do(doFile types.DoFile) (*http.Response, error)
+}
 
+type httpClient struct {
+	client *http.Client
+}
+
+func NewHttpClient(client *http.Client) HttpClient {
+	return &httpClient{
+		client,
+	}
+}
+
+func (h *httpClient) Do(doFile types.DoFile) (*http.Response, error) {
 	// Replace params
 	url := doFile.Do.URL
 	for key, value := range doFile.Do.Params {
@@ -35,14 +47,13 @@ func Do(doFile types.DoFile) (*http.Response, error) {
 	}
 	req.URL.RawQuery = query.Encode()
 
-	if doFile.Do.Body != nil {
+	if doFile.Do.Body != "" {
 		bodyBytes, err := json.Marshal(doFile.Do.Body)
 		if err != nil {
 			return nil, err
 		}
 		req.Body = io.NopCloser(strings.NewReader(string(bodyBytes)))
-		req.Header.Set("Content-Type", "application/json")
 	}
 
-	return client.Do(req)
+	return h.client.Do(req)
 }

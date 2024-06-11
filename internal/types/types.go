@@ -2,7 +2,7 @@ package types
 
 // Let defines the variables section
 type Let struct {
-	Variables map[string]interface{}
+	Variables map[string]interface{} `json:"variables"`
 }
 
 // Do defines the request section
@@ -12,7 +12,7 @@ type Do struct {
 	Params  map[string]interface{} `json:"params"`
 	Query   map[string]interface{} `json:"query"`
 	Headers map[string]interface{} `json:"headers"`
-	Body    map[string]interface{} `json:"body"`
+	Body    string                 `json:"body"`
 }
 
 // DoFile is the representation of file.do

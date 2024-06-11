@@ -1,160 +1,68 @@
 package parser
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
-	"os"
-	"regexp"
-	"strconv"
-	"strings"
 
+	"github.com/jibaru/do/internal/reader"
 	"github.com/jibaru/do/internal/types"
 )
 
-func readLetSection(filename string) (string, error) {
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return "", err
-	}
+var (
+	ErrParserDoSectionEmpty = errors.New("do section is empty")
+	ErrParserMethodRequired = errors.New("method is required")
+	ErrParserURLRequired    = errors.New("url is required")
+)
 
-	content := string(data)
-
-	letRegex := regexp.MustCompile(`(?s)let\s*\{(.*?)\}`)
-
-	letMatch := letRegex.FindStringSubmatch(content)
-	if len(letMatch) > 1 {
-		letContent := letMatch[1]
-		return strings.TrimSpace(letContent), nil
-	}
-
-	return "", errors.New("let section not found")
+type Parser interface {
+	FromFilename(filename string) (*types.DoFile, error)
 }
 
-func parseLetSection(letContent string) (map[string]interface{}, error) {
-	if strings.TrimSpace(letContent) == "" {
-		return nil, nil
-	}
-
-	letVariables := make(map[string]interface{})
-
-	keyValueRegex := regexp.MustCompile(`(\w+)\s*=\s*(".+?"|\d+|\d+\.\d+)`)
-
-	matches := keyValueRegex.FindAllStringSubmatch(letContent, -1)
-	for _, match := range matches {
-		key := match[1]
-		value := match[2]
-
-		if strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") {
-			letVariables[key] = strings.Trim(value, "\"")
-		} else if i, err := strconv.Atoi(value); err == nil {
-			letVariables[key] = i
-		} else if f, err := strconv.ParseFloat(value, 64); err == nil {
-			letVariables[key] = f
-		}
-	}
-
-	return letVariables, nil
+type parser struct {
+	doFileReader      reader.FileReader
+	sectionExtractor  SectionExtractor
+	variablesReplacer VariablesReplacer
 }
 
-func readDoSection(filename string) (string, error) {
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return "", err
-	}
-
-	content := string(data)
-
-	doRegex := regexp.MustCompile(`do\s*\{([^{}]*(\{[^{}]*\}[^{}]*)*)\}`)
-
-	doMatch := doRegex.FindStringSubmatch(content)
-	if len(doMatch) > 1 {
-		return strings.TrimSpace(doMatch[1]), nil
-	}
-
-	return "", errors.New("do section not found")
-}
-
-func parseDoSection(doContent string) (map[string]interface{}, error) {
-	doVariables := make(map[string]interface{})
-
-	keyValueRegex := regexp.MustCompile(`(\w+)\s*=\s*(\{.*?\}|".*?"|\w+)`)
-
-	matches := keyValueRegex.FindAllStringSubmatch(doContent, -1)
-	for _, match := range matches {
-		key := match[1]
-		value := match[2]
-
-		// if json
-		if strings.HasPrefix(value, "{") && strings.HasSuffix(value, "}") {
-			var obj map[string]interface{}
-			if err := json.Unmarshal([]byte(value), &obj); err != nil {
-				return nil, err
-			}
-			doVariables[key] = obj
-		} else {
-			// if string
-			value = strings.Trim(value, "\"")
-			doVariables[key] = value
-		}
-	}
-
-	return doVariables, nil
-}
-
-func replaceVariables(doVariables map[string]interface{}, letVariables map[string]interface{}) {
-	if letVariables == nil {
-		return
-	}
-
-	for key, value := range doVariables {
-		switch val := value.(type) {
-		case string:
-			doVariables[key] = replaceStringVariables(val, letVariables)
-		case map[string]interface{}:
-			replaceVariables(val, letVariables)
-		}
+func New(
+	doFileReader reader.FileReader,
+	sectionExtractor SectionExtractor,
+	variablesReplacer VariablesReplacer,
+) Parser {
+	return &parser{
+		doFileReader,
+		sectionExtractor,
+		variablesReplacer,
 	}
 }
 
-func replaceStringVariables(value string, letVariables map[string]interface{}) string {
-	for key, val := range letVariables {
-		value = strings.ReplaceAll(value, fmt.Sprintf("$%s", key), fmt.Sprintf("%v", val))
-	}
-	return value
-}
-
-func Filename(filename string) (*types.DoFile, error) {
-	letContent, err := readLetSection(filename)
+func (p *parser) FromFilename(filename string) (*types.DoFile, error) {
+	content, err := p.doFileReader.Read(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	letVariables, err := parseLetSection(letContent)
+	letVariables, err := p.sectionExtractor.Extract(LetSection, content)
 	if err != nil {
 		return nil, err
 	}
 
-	doContent, err := readDoSection(filename)
+	doVariables, err := p.sectionExtractor.Extract(DoSection, content)
 	if err != nil {
 		return nil, err
 	}
 
-	doVariables, err := parseDoSection(doContent)
-	if err != nil {
-		return nil, err
-	}
+	p.variablesReplacer.Replace(doVariables, letVariables)
 
 	if doVariables == nil {
-		return nil, errors.New("do section is empty")
+		return nil, ErrParserDoSectionEmpty
 	}
 
 	if doVariables["method"] == nil {
-		return nil, errors.New("method is required")
+		return nil, ErrParserMethodRequired
 	}
 
 	if doVariables["url"] == nil {
-		return nil, errors.New("url is required")
+		return nil, ErrParserURLRequired
 	}
 
 	replaceVariables(doVariables, letVariables)
@@ -182,7 +90,7 @@ func Filename(filename string) (*types.DoFile, error) {
 	}
 
 	if mp, ok := doVariables["body"]; ok {
-		doFile.Do.Body = mp.(map[string]interface{})
+		doFile.Do.Body = mp.(string)
 	}
 
 	return doFile, nil
