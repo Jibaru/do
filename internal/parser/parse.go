@@ -65,7 +65,7 @@ func (p *parser) FromFilename(filename string) (*types.DoFile, error) {
 		return nil, ErrParserURLRequired
 	}
 
-	replaceVariables(doVariables, letVariables)
+	p.variablesReplacer.Replace(doVariables, letVariables)
 
 	doFile := &types.DoFile{
 		Let: types.Let{
