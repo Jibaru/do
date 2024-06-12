@@ -1,8 +1,10 @@
-package parser
+package parser_test
 
 import (
 	"errors"
 	"testing"
+
+	"github.com/jibaru/do/internal/parser"
 )
 
 func TestDoSectionNormalizer_Normalize(t *testing.T) {
@@ -29,7 +31,7 @@ func TestDoSectionNormalizer_Normalize(t *testing.T) {
 		},
 	}
 
-	normalizer := NewNormalizer()
+	normalizer := parser.NewNormalizer()
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
