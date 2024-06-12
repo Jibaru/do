@@ -93,6 +93,7 @@ func (d *sectionExtractor) parse(normalizedContent string) (map[string]interface
 	result := make(map[string]interface{})
 
 	lines := strings.Split(normalizedContent, ";")
+	lines = lines[:len(lines)-1] // remove last empty line
 
 	for _, line := range lines {
 		parts := strings.SplitN(line, "=", 2)
@@ -121,6 +122,9 @@ func (d *sectionExtractor) parse(normalizedContent string) (map[string]interface
 				return nil, ErrSectionExtractorParsingBooleanValue
 			}
 			result[key] = b
+		} else if num, err := strconv.ParseInt(value, 10, 64); err == nil {
+			// if value is an integer
+			result[key] = int(num)
 		} else if num, err := strconv.ParseFloat(value, 64); err == nil {
 			// if value is a number
 			result[key] = num
