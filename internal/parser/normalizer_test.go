@@ -20,6 +20,11 @@ func TestDoSectionNormalizer_Normalize(t *testing.T) {
 			expected: "method=\"GET\";url=\"http://    localhost:8080/api/todos/:id\";params={\"id\":\"$id\"};query={\"id\":\"$id\"};headers={\"Authorization\":\"$token\",\"Content-Type\":\"application/json\"};body=`{\"extra\":\"something\"}`;",
 		},
 		{
+			name:     "success let section",
+			content:  "    var1 = 12; \n  var2 = \"text\"; \t   var3 = false;    var4 = 12.33;",
+			expected: "var1=12;var2=\"text\";var3=false;var4=12.33;",
+		},
+		{
 			name:          "error by empty content",
 			content:       "",
 			expectedError: errors.New("empty content"),
