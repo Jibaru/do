@@ -70,6 +70,32 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
+			name:       "success let in string",
+			section:    parser.LetSection,
+			rawContent: `let{var1=12;var2="let";var3=false;var4=12.33;}do{method="GET";url="https://localhost:8080/api/v1/tests";body={};}`,
+			expected: map[string]interface{}{
+				"var1": 12,
+				"var2": "let",
+				"var3": false,
+				"var4": 12.33,
+			},
+			normalizerFn: func(content string) (string, error) {
+				return `var1=12;var2="let";var3=false;var4=12.33;`, nil
+			},
+		},
+		{
+			name:       "success do in string",
+			section:    parser.DoSection,
+			rawContent: `let{var1=12;var2="text";var3=false;var4=12.33;}do{method="GET";url="https://dolocalhost:8080/api/v1/tests";}`,
+			expected: map[string]interface{}{
+				"method": "GET",
+				"url":    "https://dolocalhost:8080/api/v1/tests",
+			},
+			normalizerFn: func(content string) (string, error) {
+				return `method="GET";url="https://dolocalhost:8080/api/v1/tests";`, nil
+			},
+		},
+		{
 			name:          "error parsing JSON",
 			section:       parser.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}do{method="GET";url="https://localhost:8080/api/v1/tests";body={};}`,
