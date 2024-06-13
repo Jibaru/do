@@ -51,8 +51,6 @@ func (p *parser) FromFilename(filename string) (*types.DoFile, error) {
 		return nil, err
 	}
 
-	p.variablesReplacer.Replace(doVariables, letVariables)
-
 	if doVariables == nil {
 		return nil, ErrParserDoSectionEmpty
 	}
