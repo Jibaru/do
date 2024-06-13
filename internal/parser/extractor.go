@@ -9,11 +9,11 @@ import (
 )
 
 var (
-	ErrSectionExtractorNoDoBlock                  = errors.New("no 'do' block found")
-	ErrSectionExtractorMissingOpeningBraceAfterDo = errors.New("missing opening brace after 'do'")
-	ErrSectionExtractorMissingClosingBrace        = errors.New("missing closing brace for 'do' block")
-	ErrSectionExtractorParsingJSON                = errors.New("error parsing JSON value")
-	ErrSectionExtractorParsingBooleanValue        = errors.New("error parsing boolean value")
+	ErrSectionExtractorNoBlock             = errors.New("no block found")
+	ErrSectionExtractorMissingOpeningBrace = errors.New("missing opening brace")
+	ErrSectionExtractorMissingClosingBrace = errors.New("missing closing brace")
+	ErrSectionExtractorParsingJSON         = errors.New("error parsing JSON value")
+	ErrSectionExtractorParsingBooleanValue = errors.New("error parsing boolean value")
 )
 
 type Section string
@@ -47,6 +47,9 @@ func (d *sectionExtractor) Extract(section Section, rawContent string) (map[stri
 
 	normalizedContent, err := d.doSectionNormalizer.Normalize(content)
 	if err != nil {
+		if errors.Is(err, ErrNormalizerEmptyContent) {
+			return nil, ErrSectionExtractorNoBlock
+		}
 		return nil, err
 	}
 
@@ -56,13 +59,13 @@ func (d *sectionExtractor) Extract(section Section, rawContent string) (map[stri
 func (d *sectionExtractor) extractDoContent(section Section, text string) (string, error) {
 	startIndex := strings.Index(text, string(section))
 	if startIndex == -1 {
-		return "", ErrSectionExtractorNoDoBlock
+		return "", ErrSectionExtractorNoBlock
 	}
 
 	startIndex += 2 // to skip do
 	openBraceIndex := strings.Index(text[startIndex:], "{")
 	if openBraceIndex == -1 {
-		return "", ErrSectionExtractorMissingOpeningBraceAfterDo
+		return "", ErrSectionExtractorMissingOpeningBrace
 	}
 	openBraceIndex += startIndex
 

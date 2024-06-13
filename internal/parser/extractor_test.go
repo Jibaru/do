@@ -46,7 +46,7 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			name:          "error no do block",
 			section:       parser.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}`,
-			expectedError: errors.New("no 'do' block found"),
+			expectedError: errors.New("no block found"),
 			normalizerFn: func(content string) (string, error) {
 				return "", nil
 			},
@@ -55,7 +55,7 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			name:          "error missing opening brace after do",
 			section:       parser.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}do`,
-			expectedError: errors.New("missing opening brace after 'do'"),
+			expectedError: errors.New("missing opening brace"),
 			normalizerFn: func(content string) (string, error) {
 				return "", nil
 			},
@@ -64,7 +64,7 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			name:          "error missing closing brace",
 			section:       parser.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}do{method="GET";url="https://localhost:8080/api/v1/tests"`,
-			expectedError: errors.New("missing closing brace for 'do' block"),
+			expectedError: errors.New("missing closing brace"),
 			normalizerFn: func(content string) (string, error) {
 				return "", nil
 			},
