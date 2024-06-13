@@ -43,7 +43,11 @@ func (p *parser) FromFilename(filename string) (*types.DoFile, error) {
 
 	letVariables, err := p.sectionExtractor.Extract(LetSection, content)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, ErrSectionExtractorNoBlock) {
+			letVariables = nil
+		} else {
+			return nil, err
+		}
 	}
 
 	doVariables, err := p.sectionExtractor.Extract(DoSection, content)
