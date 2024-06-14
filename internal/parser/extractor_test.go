@@ -113,6 +113,21 @@ func TestSectionExtractor_Extract(t *testing.T) {
 				return `method="GET";url="https://localhost:8080/api/v1/tests";body={};`, nil
 			},
 		},
+		{
+			name:       "success let section with multiple ; and {}",
+			section:    parser.LetSection,
+			rawContent: "let{var1=12;var2=\"tex;;;t\";var3=false;var4=12.33;var5=\"{;\";}do{method=\"GET\";}",
+			expected: map[string]interface{}{
+				"var1": 12,
+				"var2": "tex;;;t",
+				"var3": false,
+				"var4": 12.33,
+				"var5": "{;",
+			},
+			normalizerFn: func(content string) (string, error) {
+				return `var1=12;var2="tex;;;t";var3=false;var4=12.33;var5="{;";`, nil
+			},
+		},
 	}
 
 	mockNormalizer := &parser.MockNormalizer{}
@@ -124,7 +139,7 @@ func TestSectionExtractor_Extract(t *testing.T) {
 
 			result, err := sectionExtractor.Extract(tc.section, tc.rawContent)
 
-			if err != nil && err.Error() != tc.expectedError.Error() {
+			if err != nil && ((tc.expectedError == nil) || (err.Error() != tc.expectedError.Error())) {
 				t.Errorf("expected error %v, got %v", tc.expectedError, err)
 			}
 
@@ -133,6 +148,45 @@ func TestSectionExtractor_Extract(t *testing.T) {
 					t.Errorf("expected %v, got %v", value, result[key])
 					t.Errorf("expected %T, got %T", value, result[key])
 				}
+			}
+		})
+	}
+}
+
+func TestSectionExtractor_ExtractContent(t *testing.T) {
+	testCases := []struct {
+		name          string
+		section       parser.Section
+		text          string
+		expected      string
+		expectedError error
+	}{
+		{
+			name:     "success let section",
+			section:  parser.LetSection,
+			text:     " let   {    var1 = 12; \n  var2 = \"text\"; \t   var3 = false;    var4 = 12.33;}",
+			expected: "    var1 = 12; \n  var2 = \"text\"; \t   var3 = false;    var4 = 12.33;",
+		},
+		{
+			name:     "success let section with multiple ; and {}",
+			section:  parser.LetSection,
+			text:     "let{var1=12;var2=\"tex;;;t\";var3=false;var4=12.33;var5=\"{;\";}do{method=\"GET\";}",
+			expected: "var1=12;var2=\"tex;;;t\";var3=false;var4=12.33;var5=\"{;\";",
+		},
+	}
+
+	sectionExtractor := parser.TheSectionExtractor{}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			content, err := sectionExtractor.ExtractContent(tc.section, tc.text)
+
+			if err != nil && ((tc.expectedError == nil) || (err.Error() != tc.expectedError.Error())) {
+				t.Errorf("expected error %v, got %v", tc.expectedError, err)
+			}
+
+			if content != tc.expected {
+				t.Errorf("expected %v, got %v", tc.expected, content)
 			}
 		})
 	}

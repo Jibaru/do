@@ -27,20 +27,20 @@ type SectionExtractor interface {
 	Extract(section Section, rawContent string) (map[string]interface{}, error)
 }
 
-type sectionExtractor struct {
+type TheSectionExtractor struct {
 	doSectionNormalizer Normalizer
 }
 
 func NewSectionExtractor(
 	doSectionNormalizer Normalizer,
 ) SectionExtractor {
-	return &sectionExtractor{
+	return &TheSectionExtractor{
 		doSectionNormalizer,
 	}
 }
 
-func (d *sectionExtractor) Extract(section Section, rawContent string) (map[string]interface{}, error) {
-	content, err := d.extractDoContent(section, rawContent)
+func (d *TheSectionExtractor) Extract(section Section, rawContent string) (map[string]interface{}, error) {
+	content, err := d.ExtractContent(section, rawContent)
 	if err != nil {
 		return nil, err
 	}
@@ -56,47 +56,111 @@ func (d *sectionExtractor) Extract(section Section, rawContent string) (map[stri
 	return d.parse(normalizedContent)
 }
 
-func (d *sectionExtractor) extractDoContent(section Section, text string) (string, error) {
-	startIndex := strings.Index(text, string(section))
+func (d *TheSectionExtractor) ExtractContent(section Section, text string) (string, error) {
+	inBlock := false
+	textInNoBlocks := strings.Builder{}
+
+	for _, ch := range text {
+		toWrite := ch
+		if inBlock {
+			toWrite = ' '
+		}
+
+		if ch == '{' {
+			inBlock = true
+			toWrite = ' '
+		}
+
+		if ch == '}' {
+			inBlock = false
+			toWrite = ' '
+		}
+
+		textInNoBlocks.WriteRune(toWrite)
+	}
+
+	textWithOnlyBlocks := textInNoBlocks.String()
+	startIndex := strings.Index(textWithOnlyBlocks, string(section))
 	if startIndex == -1 {
 		return "", ErrSectionExtractorNoBlock
 	}
 
-	startIndex += 2 // to skip do
-	openBraceIndex := strings.Index(text[startIndex:], "{")
-	if openBraceIndex == -1 {
-		return "", ErrSectionExtractorMissingOpeningBrace
-	}
-	openBraceIndex += startIndex
-
-	braceCount := 1
-	endIndex := openBraceIndex + 1
 	content := strings.Builder{}
-	for ; endIndex < len(text); endIndex++ {
-		if text[endIndex] == '{' {
-			braceCount++
-		} else if text[endIndex] == '}' {
-			braceCount--
-			if braceCount == 0 {
-				break // found closing brace for do block
-			}
-		} else {
-			content.WriteByte(text[endIndex])
+	inBlock = false
+	inString := false
+	foundOpeningBrace := false
+	foundClosingBrace := false
+	for i := startIndex + len(string(section)); i < len(text); i++ {
+		if !inBlock && text[i] == '{' && !inString {
+			inBlock = true
+			foundOpeningBrace = true
+			continue
+		}
+
+		if inBlock && !inString && text[i] == '}' {
+			inBlock = false
+			foundClosingBrace = true
+			break
+		}
+
+		if text[i] == '"' {
+			inString = !inString
+		}
+
+		if inBlock {
+			content.WriteByte(text[i])
 		}
 	}
 
-	if endIndex == len(text) {
+	if !foundOpeningBrace {
+		return "", ErrSectionExtractorMissingOpeningBrace
+	}
+
+	if !foundClosingBrace {
 		return "", ErrSectionExtractorMissingClosingBrace
 	}
 
-	return text[openBraceIndex+1 : endIndex], nil
+	sectionContent := content.String()
+
+	if strings.TrimSpace(sectionContent) == "" {
+		return "", ErrSectionExtractorNoBlock
+	}
+
+	return sectionContent, nil
 }
 
-func (d *sectionExtractor) parse(normalizedContent string) (map[string]interface{}, error) {
+func (d *TheSectionExtractor) Parts(normalizedContent string) []string {
+	parts := make([]string, 0)
+	currentPart := strings.Builder{}
+	inString := false
+
+	for _, ch := range normalizedContent {
+		if ch == '"' {
+			inString = !inString
+		}
+
+		if ch == ';' && !inString {
+			part := currentPart.String()
+			currentPart.Reset()
+
+			if part == ";" {
+				continue
+			}
+
+			parts = append(parts, part)
+			continue
+		}
+
+		currentPart.WriteRune(ch)
+	}
+
+	return parts
+}
+
+func (d *TheSectionExtractor) parse(normalizedContent string) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
 
-	lines := strings.Split(normalizedContent, ";")
-	lines = lines[:len(lines)-1] // remove last empty line
+	lines := d.Parts(normalizedContent)
 
 	for _, line := range lines {
 		parts := strings.SplitN(line, "=", 2)
