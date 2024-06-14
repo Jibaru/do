@@ -2,7 +2,6 @@ package parser
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 )
 
@@ -25,42 +24,23 @@ func (d *normalizer) Normalize(content string) (string, error) {
 		return "", ErrNormalizerEmptyContent
 	}
 
-	return d.normalizeContent(content)
-}
-
-func (d *normalizer) normalizeContent(doContent string) (string, error) {
 	var result strings.Builder
-	lines := strings.Split(strings.TrimSpace(doContent), ";")
+	inQuotes := false
 
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
+	for i, ch := range content {
+		if ch == '"' {
+			inQuotes = !inQuotes
+		}
+		if inQuotes {
+			result.WriteByte(content[i])
 			continue
 		}
 
-		line = d.removeSpacesExceptInQuotes(line)
-		result.WriteString(fmt.Sprintf("%s;", line))
+		if content[i] != ' ' && content[i] != '\t' && content[i] != '\n' && content[i] != '\r' {
+			result.WriteByte(content[i])
+		}
 	}
 
 	return result.String(), nil
-}
 
-func (d *normalizer) removeSpacesExceptInQuotes(line string) string {
-	var result strings.Builder
-	var insideQuotes bool = false
-	for i := 0; i < len(line); i++ {
-		if line[i] == '"' {
-			insideQuotes = !insideQuotes
-		}
-
-		if insideQuotes {
-			result.WriteByte(line[i])
-			continue
-		}
-
-		if line[i] != ' ' && line[i] != '\t' && line[i] != '\n' && line[i] != '\r' {
-			result.WriteByte(line[i])
-		}
-	}
-	return result.String()
 }

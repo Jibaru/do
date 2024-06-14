@@ -34,6 +34,11 @@ func TestDoSectionNormalizer_Normalize(t *testing.T) {
 			content:       "    ",
 			expectedError: errors.New("empty content"),
 		},
+		{
+			name:     "success let section with multiple ; and {}",
+			content:  "    var1 = 12; \n  var2 = \"tex;;;t\"; \t   var3 = false;  var4 = 12.33;    var5=\"{;\";",
+			expected: "var1=12;var2=\"tex;;;t\";var3=false;var4=12.33;var5=\"{;\";",
+		},
 	}
 
 	normalizer := parser.NewNormalizer()
