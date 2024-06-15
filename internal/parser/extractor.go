@@ -88,19 +88,30 @@ func (d *TheSectionExtractor) ExtractContent(section Section, text string) (stri
 	content := strings.Builder{}
 	inBlock = false
 	inString := false
+	openBracesCount := 0
 	foundOpeningBrace := false
-	foundClosingBrace := false
+
 	for i := startIndex + len(string(section)); i < len(text); i++ {
-		if !inBlock && text[i] == '{' && !inString {
-			inBlock = true
-			foundOpeningBrace = true
+		if text[i] == '{' && !inString {
+			if !foundOpeningBrace {
+				foundOpeningBrace = true
+				inBlock = true
+			}
+			openBracesCount++
+			if openBracesCount > 1 {
+				content.WriteByte(text[i])
+			}
 			continue
 		}
 
-		if inBlock && !inString && text[i] == '}' {
-			inBlock = false
-			foundClosingBrace = true
-			break
+		if text[i] == '}' && !inString {
+			openBracesCount--
+			if openBracesCount == 0 {
+				inBlock = false
+				break
+			}
+			content.WriteByte(text[i])
+			continue
 		}
 
 		if text[i] == '"' {
@@ -116,7 +127,7 @@ func (d *TheSectionExtractor) ExtractContent(section Section, text string) (stri
 		return "", ErrSectionExtractorMissingOpeningBrace
 	}
 
-	if !foundClosingBrace {
+	if openBracesCount != 0 {
 		return "", ErrSectionExtractorMissingClosingBrace
 	}
 
@@ -175,6 +186,9 @@ func (d *TheSectionExtractor) parse(normalizedContent string) (map[string]interf
 		if strings.HasPrefix(value, `"`) && strings.HasSuffix(value, `"`) {
 			// if value is a string
 			result[key] = strings.Trim(value, `"`)
+		} else if strings.HasPrefix(value, "`") && strings.HasSuffix(value, "`") {
+			// if value is a string
+			result[key] = strings.Trim(value, "`")
 		} else if strings.HasPrefix(value, "{") && strings.HasSuffix(value, "}") {
 			// if value is a JSON object
 			var obj map[string]interface{}

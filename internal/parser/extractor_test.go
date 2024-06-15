@@ -19,13 +19,21 @@ func TestSectionExtractor_Extract(t *testing.T) {
 		{
 			name:       "success do section",
 			section:    parser.DoSection,
-			rawContent: `let{}do{method="GET";url="https://localhost:8080/api/v1/tests";}`,
+			rawContent: "let{}do{method=\"GET\";url=\"https://localhost:8080/api/v1/tests\";params={\"id\":12};headers={\"Authorization\":\"Bearer token\"};body=`{\"extra\":true}`;}",
 			expected: map[string]interface{}{
 				"method": "GET",
 				"url":    "https://localhost:8080/api/v1/tests",
+				"params": map[string]interface{}{
+					"id": float64(12),
+				},
+				"headers": map[string]interface{}{
+					"Authorization": "Bearer token",
+				},
+				"body": `{"extra":true}`,
 			},
 			normalizerFn: func(content string) (string, error) {
-				return `method="GET";url="https://localhost:8080/api/v1/tests";`, nil
+				t.Log(content)
+				return content, nil
 			},
 		},
 		{
@@ -133,6 +141,11 @@ func TestSectionExtractor_Extract(t *testing.T) {
 	mockNormalizer := &parser.MockNormalizer{}
 	sectionExtractor := parser.NewSectionExtractor(mockNormalizer)
 
+	isMap := func(i interface{}) bool {
+		_, ok := i.(map[string]interface{})
+		return ok
+	}
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockNormalizer.NormalizeFn = tc.normalizerFn
@@ -144,6 +157,16 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			}
 
 			for key, value := range tc.expected {
+				if isMap(result[key]) && isMap(value) {
+					for k, v := range value.(map[string]interface{}) {
+						if result[key].(map[string]interface{})[k] != v {
+							t.Errorf("expected %v, got %v", v, result[key].(map[string]interface{})[k])
+							t.Errorf("expected %T, got %T", v, result[key].(map[string]interface{})[k])
+						}
+					}
+					continue
+				}
+
 				if result[key] != value {
 					t.Errorf("expected %v, got %v", value, result[key])
 					t.Errorf("expected %T, got %T", value, result[key])
@@ -172,6 +195,12 @@ func TestSectionExtractor_ExtractContent(t *testing.T) {
 			section:  parser.LetSection,
 			text:     "let{var1=12;var2=\"tex;;;t\";var3=false;var4=12.33;var5=\"{;\";}do{method=\"GET\";}",
 			expected: "var1=12;var2=\"tex;;;t\";var3=false;var4=12.33;var5=\"{;\";",
+		},
+		{
+			name:     "success do section",
+			section:  parser.DoSection,
+			text:     "let {\n    var1 = 1;\n    var2 = \"hello\";\n    var3 = true;\n    var4 = false;\n}\n\ndo {\n    method = \"GET\";\n    url = \"http://example.com/:id\";\n    params = {\n        \"id\": \"$var1\"\n    };\n    headers = {\n        \"Content-Type\": \"application/json\",\n        \"X-Message\": \"$var2\"\n    };\n    body = `{\n        \"var1\": $var1,\n        \"var2\": \"$var2\",\n        \"var3\": $var3,\n        \"var4\": $var4\n    }`;\n}",
+			expected: "\n    method = \"GET\";\n    url = \"http://example.com/:id\";\n    params = {\n        \"id\": \"$var1\"\n    };\n    headers = {\n        \"Content-Type\": \"application/json\",\n        \"X-Message\": \"$var2\"\n    };\n    body = `{\n        \"var1\": $var1,\n        \"var2\": \"$var2\",\n        \"var3\": $var3,\n        \"var4\": $var4\n    }`;\n",
 		},
 	}
 
