@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/jibaru/do/internal/parser/analyzer"
 	"github.com/jibaru/do/internal/parser/extractor"
 	"github.com/jibaru/do/internal/parser/normalizer"
 	"github.com/jibaru/do/internal/parser/partitioner"
@@ -19,6 +20,7 @@ func TestSectionExtractor_Extract(t *testing.T) {
 		expectedError error
 		normalizerFn  func(content types.RawSectionContent) (types.NormalizedSectionContent, error)
 		splitFn       func(content types.NormalizedSectionContent) (types.SectionExpressions, error)
+		analyzeFn     func(expressions types.SectionExpressions) (map[string]interface{}, error)
 	}{
 		{
 			name:       "success do section",
@@ -47,6 +49,19 @@ func TestSectionExtractor_Extract(t *testing.T) {
 					"body=`{\"extra\":true}`",
 				}, nil
 			},
+			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
+				return map[string]interface{}{
+					"method": "GET",
+					"url":    "https://localhost:8080/api/v1/tests",
+					"params": map[string]interface{}{
+						"id": float64(12),
+					},
+					"headers": map[string]interface{}{
+						"Authorization": "Bearer token",
+					},
+					"body": `{"extra":true}`,
+				}, nil
+			},
 		},
 		{
 			name:       "success let section",
@@ -69,6 +84,14 @@ func TestSectionExtractor_Extract(t *testing.T) {
 					"var4=12.33",
 				}, nil
 			},
+			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
+				return map[string]interface{}{
+					"var1": 12,
+					"var2": "text",
+					"var3": false,
+					"var4": 12.33,
+				}, nil
+			},
 		},
 		{
 			name:          "error no do block",
@@ -79,6 +102,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 				return "", nil
 			},
 			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
+				return nil, nil
+			},
+			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
 				return nil, nil
 			},
 		},
@@ -93,6 +119,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
 				return nil, nil
 			},
+			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
+				return nil, nil
+			},
 		},
 		{
 			name:          "error missing closing brace",
@@ -103,6 +132,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 				return "", nil
 			},
 			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
+				return nil, nil
+			},
+			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
 				return nil, nil
 			},
 		},
@@ -127,6 +159,14 @@ func TestSectionExtractor_Extract(t *testing.T) {
 					"var4=12.33",
 				}, nil
 			},
+			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
+				return map[string]interface{}{
+					"var1": 12,
+					"var2": "let",
+					"var3": false,
+					"var4": 12.33,
+				}, nil
+			},
 		},
 		{
 			name:       "success do in string",
@@ -145,6 +185,12 @@ func TestSectionExtractor_Extract(t *testing.T) {
 					"url=\"https://dolocalhost:8080/api/v1/tests\"",
 				}, nil
 			},
+			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
+				return map[string]interface{}{
+					"method": "GET",
+					"url":    "https://dolocalhost:8080/api/v1/tests",
+				}, nil
+			},
 		},
 		{
 			name:          "error parsing JSON",
@@ -161,6 +207,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 					"body={}",
 				}, nil
 			},
+			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
+				return nil, nil
+			},
 		},
 		{
 			name:          "error parsing boolean value",
@@ -176,6 +225,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 					"url=\"https://localhost:8080/api/v1/tests\"",
 					"body={}",
 				}, nil
+			},
+			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
+				return nil, nil
 			},
 		},
 		{
@@ -201,12 +253,22 @@ func TestSectionExtractor_Extract(t *testing.T) {
 					"var5=\"{;\"",
 				}, nil
 			},
+			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
+				return map[string]interface{}{
+					"var1": 12,
+					"var2": "tex;;;t",
+					"var3": false,
+					"var4": 12.33,
+					"var5": "{;",
+				}, nil
+			},
 		},
 	}
 
 	mockNormalizer := &normalizer.Mock{}
 	mockPartitioner := &partitioner.Mock{}
-	sectionExtractor := extractor.New(mockNormalizer, mockPartitioner)
+	mockAnalyzer := &analyzer.Mock{}
+	sectionExtractor := extractor.New(mockNormalizer, mockPartitioner, mockAnalyzer)
 
 	isMap := func(i interface{}) bool {
 		_, ok := i.(map[string]interface{})
@@ -217,6 +279,7 @@ func TestSectionExtractor_Extract(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mockNormalizer.NormalizeFn = tc.normalizerFn
 			mockPartitioner.SplitFn = tc.splitFn
+			mockAnalyzer.AnalyzeFn = tc.analyzeFn
 
 			result, err := sectionExtractor.Extract(tc.section, tc.rawContent)
 

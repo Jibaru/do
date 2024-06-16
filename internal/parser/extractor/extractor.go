@@ -1,12 +1,10 @@
 package extractor
 
 import (
-	"encoding/json"
 	"errors"
-	"log"
-	"strconv"
 	"strings"
 
+	"github.com/jibaru/do/internal/parser/analyzer"
 	"github.com/jibaru/do/internal/parser/normalizer"
 	"github.com/jibaru/do/internal/parser/partitioner"
 	"github.com/jibaru/do/internal/types"
@@ -25,17 +23,20 @@ type Extractor interface {
 }
 
 type SectionExtractor struct {
-	sectionNormalizer normalizer.Normalizer
-	partitioner       partitioner.Partitioner
+	sectionNormalizer   normalizer.Normalizer
+	partitioner         partitioner.Partitioner
+	expressionsAnalyzer analyzer.Analyzer
 }
 
 func New(
 	sectionNormalizer normalizer.Normalizer,
 	partitioner partitioner.Partitioner,
+	expressionsAnalyzer analyzer.Analyzer,
 ) Extractor {
 	return &SectionExtractor{
 		sectionNormalizer,
 		partitioner,
+		expressionsAnalyzer,
 	}
 }
 
@@ -53,7 +54,12 @@ func (d *SectionExtractor) Extract(section types.Section, rawContent types.FileR
 		return nil, err
 	}
 
-	return d.parse(normalizedContent)
+	lines, err := d.partitioner.Split(normalizedContent)
+	if err != nil {
+		return nil, err
+	}
+
+	return d.expressionsAnalyzer.Analyze(lines)
 }
 
 func (d *SectionExtractor) ExtractContent(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
@@ -138,57 +144,4 @@ func (d *SectionExtractor) ExtractContent(section types.Section, text types.File
 	}
 
 	return types.RawSectionContent(sectionContent), nil
-}
-
-func (d *SectionExtractor) parse(normalizedContent types.NormalizedSectionContent) (map[string]interface{}, error) {
-	result := make(map[string]interface{})
-
-	lines, err := d.partitioner.Split(normalizedContent)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, line := range lines {
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) != 2 {
-			log.Println("error reading do section line:", parts, len(parts))
-			continue
-		}
-
-		key := strings.TrimSpace(parts[0])
-		value := strings.TrimSpace(parts[1])
-
-		if strings.HasPrefix(value, `"`) && strings.HasSuffix(value, `"`) {
-			// if value is a string
-			result[key] = strings.Trim(value, `"`)
-		} else if strings.HasPrefix(value, "`") && strings.HasSuffix(value, "`") {
-			// if value is a string
-			result[key] = strings.Trim(value, "`")
-		} else if strings.HasPrefix(value, "{") && strings.HasSuffix(value, "}") {
-			// if value is a JSON object
-			var obj map[string]interface{}
-			if err := json.Unmarshal([]byte(value), &obj); err != nil {
-				return nil, ErrSectionExtractorParsingJSON
-			}
-			result[key] = obj
-		} else if value == "true" || value == "false" {
-			// if value is a boolean
-			b, err := strconv.ParseBool(value)
-			if err != nil {
-				return nil, ErrSectionExtractorParsingBooleanValue
-			}
-			result[key] = b
-		} else if num, err := strconv.ParseInt(value, 10, 64); err == nil {
-			// if value is an integer
-			result[key] = int(num)
-		} else if num, err := strconv.ParseFloat(value, 64); err == nil {
-			// if value is a number
-			result[key] = num
-		} else {
-			// otherwise, value is a string
-			result[key] = value
-		}
-	}
-
-	return result, nil
 }

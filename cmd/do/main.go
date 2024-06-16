@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/jibaru/do/internal/parser"
+	"github.com/jibaru/do/internal/parser/analyzer"
 	"github.com/jibaru/do/internal/parser/extractor"
 	"github.com/jibaru/do/internal/parser/normalizer"
 	"github.com/jibaru/do/internal/parser/partitioner"
@@ -27,7 +28,8 @@ func main() {
 	doFileReader := reader.NewFileReader()
 	sectionNormalizer := normalizer.New()
 	sectionPartitioner := partitioner.New()
-	sectionExtractor := extractor.New(sectionNormalizer, sectionPartitioner)
+	expressionAnalyzer := analyzer.New()
+	sectionExtractor := extractor.New(sectionNormalizer, sectionPartitioner, expressionAnalyzer)
 	variablesReplacer := replacer.New()
 	theParser := parser.New(doFileReader, sectionExtractor, variablesReplacer)
 	client := request.NewHttpClient(&http.Client{})
