@@ -12,6 +12,9 @@ type RawSectionContent string
 // NormalizedSectionContent defines the normalized content of a section
 type NormalizedSectionContent string
 
+// SectionExpressions defines the expressions of a section
+type SectionExpressions []string
+
 // Let defines the variables section
 type Let struct {
 	Variables map[string]interface{} `json:"variables"`

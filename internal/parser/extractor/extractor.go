@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/jibaru/do/internal/parser/normalizer"
+	"github.com/jibaru/do/internal/parser/partitioner"
 	"github.com/jibaru/do/internal/types"
 )
 
@@ -25,13 +26,16 @@ type Extractor interface {
 
 type SectionExtractor struct {
 	sectionNormalizer normalizer.Normalizer
+	partitioner       partitioner.Partitioner
 }
 
 func New(
 	sectionNormalizer normalizer.Normalizer,
+	partitioner partitioner.Partitioner,
 ) Extractor {
 	return &SectionExtractor{
 		sectionNormalizer,
+		partitioner,
 	}
 }
 
@@ -136,38 +140,13 @@ func (d *SectionExtractor) ExtractContent(section types.Section, text types.File
 	return types.RawSectionContent(sectionContent), nil
 }
 
-func (d *SectionExtractor) Parts(normalizedContent types.NormalizedSectionContent) []string {
-	parts := make([]string, 0)
-	currentPart := strings.Builder{}
-	inString := false
-
-	for _, ch := range normalizedContent {
-		if ch == '"' {
-			inString = !inString
-		}
-
-		if ch == ';' && !inString {
-			part := currentPart.String()
-			currentPart.Reset()
-
-			if part == ";" {
-				continue
-			}
-
-			parts = append(parts, part)
-			continue
-		}
-
-		currentPart.WriteRune(ch)
-	}
-
-	return parts
-}
-
 func (d *SectionExtractor) parse(normalizedContent types.NormalizedSectionContent) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
 
-	lines := d.Parts(normalizedContent)
+	lines, err := d.partitioner.Split(normalizedContent)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, line := range lines {
 		parts := strings.SplitN(line, "=", 2)

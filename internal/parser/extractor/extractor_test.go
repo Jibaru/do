@@ -6,6 +6,7 @@ import (
 
 	"github.com/jibaru/do/internal/parser/extractor"
 	"github.com/jibaru/do/internal/parser/normalizer"
+	"github.com/jibaru/do/internal/parser/partitioner"
 	"github.com/jibaru/do/internal/types"
 )
 
@@ -17,6 +18,7 @@ func TestSectionExtractor_Extract(t *testing.T) {
 		expected      map[string]interface{}
 		expectedError error
 		normalizerFn  func(content types.RawSectionContent) (types.NormalizedSectionContent, error)
+		splitFn       func(content types.NormalizedSectionContent) (types.SectionExpressions, error)
 	}{
 		{
 			name:       "success do section",
@@ -36,6 +38,15 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return types.NormalizedSectionContent(content), nil
 			},
+			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
+				return types.SectionExpressions{
+					"method=\"GET\"",
+					"url=\"https://localhost:8080/api/v1/tests\"",
+					"params={\"id\":12}",
+					"headers={\"Authorization\":\"Bearer token\"}",
+					"body=`{\"extra\":true}`",
+				}, nil
+			},
 		},
 		{
 			name:       "success let section",
@@ -50,6 +61,14 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `var1=12;var2="text";var3=false;var4=12.33;`, nil
 			},
+			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
+				return types.SectionExpressions{
+					"var1=12",
+					"var2=\"text\"",
+					"var3=false",
+					"var4=12.33",
+				}, nil
+			},
 		},
 		{
 			name:          "error no do block",
@@ -58,6 +77,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			expectedError: errors.New("no block found"),
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return "", nil
+			},
+			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
+				return nil, nil
 			},
 		},
 		{
@@ -68,6 +90,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return "", nil
 			},
+			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
+				return nil, nil
+			},
 		},
 		{
 			name:          "error missing closing brace",
@@ -76,6 +101,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			expectedError: errors.New("missing closing brace"),
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return "", nil
+			},
+			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
+				return nil, nil
 			},
 		},
 		{
@@ -91,6 +119,14 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `var1=12;var2="let";var3=false;var4=12.33;`, nil
 			},
+			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
+				return types.SectionExpressions{
+					"var1=12",
+					"var2=\"let\"",
+					"var3=false",
+					"var4=12.33",
+				}, nil
+			},
 		},
 		{
 			name:       "success do in string",
@@ -103,6 +139,12 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `method="GET";url="https://dolocalhost:8080/api/v1/tests";`, nil
 			},
+			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
+				return types.SectionExpressions{
+					"method=\"GET\"",
+					"url=\"https://dolocalhost:8080/api/v1/tests\"",
+				}, nil
+			},
 		},
 		{
 			name:          "error parsing JSON",
@@ -112,6 +154,13 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `method="GET";url="https://localhost:8080/api/v1/tests";body={};`, nil
 			},
+			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
+				return types.SectionExpressions{
+					"method=\"GET\"",
+					"url=\"https://localhost:8080/api/v1/tests\"",
+					"body={}",
+				}, nil
+			},
 		},
 		{
 			name:          "error parsing boolean value",
@@ -120,6 +169,13 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			expectedError: errors.New("error parsing boolean value"),
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `method="GET";url="https://localhost:8080/api/v1/tests";body={};`, nil
+			},
+			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
+				return types.SectionExpressions{
+					"method=\"GET\"",
+					"url=\"https://localhost:8080/api/v1/tests\"",
+					"body={}",
+				}, nil
 			},
 		},
 		{
@@ -136,11 +192,21 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `var1=12;var2="tex;;;t";var3=false;var4=12.33;var5="{;";`, nil
 			},
+			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
+				return types.SectionExpressions{
+					"var1=12",
+					"var2=\"tex;;;t\"",
+					"var3=false",
+					"var4=12.33",
+					"var5=\"{;\"",
+				}, nil
+			},
 		},
 	}
 
 	mockNormalizer := &normalizer.Mock{}
-	sectionExtractor := extractor.New(mockNormalizer)
+	mockPartitioner := &partitioner.Mock{}
+	sectionExtractor := extractor.New(mockNormalizer, mockPartitioner)
 
 	isMap := func(i interface{}) bool {
 		_, ok := i.(map[string]interface{})
@@ -150,6 +216,7 @@ func TestSectionExtractor_Extract(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockNormalizer.NormalizeFn = tc.normalizerFn
+			mockPartitioner.SplitFn = tc.splitFn
 
 			result, err := sectionExtractor.Extract(tc.section, tc.rawContent)
 

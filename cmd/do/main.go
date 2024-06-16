@@ -10,6 +10,7 @@ import (
 	"github.com/jibaru/do/internal/parser"
 	"github.com/jibaru/do/internal/parser/extractor"
 	"github.com/jibaru/do/internal/parser/normalizer"
+	"github.com/jibaru/do/internal/parser/partitioner"
 	"github.com/jibaru/do/internal/parser/replacer"
 	"github.com/jibaru/do/internal/reader"
 	"github.com/jibaru/do/internal/request"
@@ -25,7 +26,8 @@ func main() {
 
 	doFileReader := reader.NewFileReader()
 	sectionNormalizer := normalizer.New()
-	sectionExtractor := extractor.New(sectionNormalizer)
+	sectionPartitioner := partitioner.New()
+	sectionExtractor := extractor.New(sectionNormalizer, sectionPartitioner)
 	variablesReplacer := replacer.New()
 	theParser := parser.New(doFileReader, sectionExtractor, variablesReplacer)
 	client := request.NewHttpClient(&http.Client{})
