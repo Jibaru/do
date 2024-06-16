@@ -89,7 +89,7 @@ func TestParser_FromFilename(t *testing.T) {
 			sectionExtractor.ExtractFn = tc.ExtractorFn
 			varReplacer.ReplaceFn = tc.ReplacerFn
 
-			doFile, err := p.FromFilename(tc.filename)
+			doFile, err := p.ParseFromFilename(tc.filename)
 
 			if err != nil && err.Error() != tc.expectedError.Error() {
 				t.Errorf("expected error %v, got %v", tc.expectedError, err)

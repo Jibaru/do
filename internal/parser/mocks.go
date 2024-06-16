@@ -5,9 +5,9 @@ import (
 )
 
 type Mock struct {
-	FromFilenameFn func(filename string) (*types.DoFile, error)
+	ParseFromFilenameFn func(filename string) (*types.DoFile, error)
 }
 
-func (m *Mock) FromFilename(filename string) (*types.DoFile, error) {
-	return m.FromFilenameFn(filename)
+func (m *Mock) ParseFromFilename(filename string) (*types.DoFile, error) {
+	return m.ParseFromFilenameFn(filename)
 }

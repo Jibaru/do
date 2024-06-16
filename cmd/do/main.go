@@ -36,7 +36,7 @@ func main() {
 	theParser := parser.New(doFileReader, sectionExtractor, variablesReplacer)
 	client := request.NewHttpClient(&http.Client{})
 
-	doFile, err := theParser.FromFilename(filename)
+	doFile, err := theParser.ParseFromFilename(filename)
 	if err != nil {
 		log.Printf("error parsing: %v\n", err)
 		return

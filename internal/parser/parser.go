@@ -10,7 +10,7 @@ import (
 )
 
 type Parser interface {
-	FromFilename(filename string) (*types.DoFile, error)
+	ParseFromFilename(filename string) (*types.DoFile, error)
 }
 
 type parser struct {
@@ -31,7 +31,7 @@ func New(
 	}
 }
 
-func (p *parser) FromFilename(filename string) (*types.DoFile, error) {
+func (p *parser) ParseFromFilename(filename string) (*types.DoFile, error) {
 	content, err := p.doFileReader.Read(filename)
 	if err != nil {
 		return nil, err
