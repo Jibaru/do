@@ -1,16 +1,9 @@
 package taker
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/jibaru/do/internal/types"
-)
-
-var (
-	ErrNoBlock             = errors.New("no block found")
-	ErrMissingOpeningBrace = errors.New("missing opening brace")
-	ErrMissingClosingBrace = errors.New("missing closing brace")
 )
 
 type Taker interface {
@@ -49,7 +42,7 @@ func (t *taker) Take(section types.Section, text types.FileReaderContent) (types
 	textWithOnlyBlocks := textInNoBlocks.String()
 	startIndex := strings.Index(textWithOnlyBlocks, string(section))
 	if startIndex == -1 {
-		return "", ErrNoBlock
+		return "", NewNoBlockError()
 	}
 
 	content := strings.Builder{}
@@ -91,17 +84,17 @@ func (t *taker) Take(section types.Section, text types.FileReaderContent) (types
 	}
 
 	if !foundOpeningBrace {
-		return "", ErrMissingOpeningBrace
+		return "", NewMissingOpeningBraceError()
 	}
 
 	if openBracesCount != 0 {
-		return "", ErrMissingClosingBrace
+		return "", NewMissingClosingBraceError()
 	}
 
 	sectionContent := content.String()
 
 	if strings.TrimSpace(sectionContent) == "" {
-		return "", ErrNoBlock
+		return "", NewNoBlockError()
 	}
 
 	return types.RawSectionContent(sectionContent), nil

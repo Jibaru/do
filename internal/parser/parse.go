@@ -9,12 +9,6 @@ import (
 	"github.com/jibaru/do/internal/types"
 )
 
-var (
-	ErrDoSectionEmpty = errors.New("do section is empty")
-	ErrMethodRequired = errors.New("method is required")
-	ErrURLRequired    = errors.New("url is required")
-)
-
 type Parser interface {
 	FromFilename(filename string) (*types.DoFile, error)
 }
@@ -58,15 +52,15 @@ func (p *parser) FromFilename(filename string) (*types.DoFile, error) {
 	}
 
 	if doVariables == nil {
-		return nil, ErrDoSectionEmpty
+		return nil, NewDoSectionEmptyError()
 	}
 
 	if doVariables[types.DoMethod] == nil {
-		return nil, ErrMethodRequired
+		return nil, NewMethodRequiredError()
 	}
 
 	if doVariables[types.DoURL] == nil {
-		return nil, ErrURLRequired
+		return nil, NewURLRequiredError()
 	}
 
 	p.variablesReplacer.Replace(doVariables, letVariables)

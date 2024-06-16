@@ -52,13 +52,13 @@ func (h *httpClient) Do(doFile types.DoFile) (*types.Response, error) {
 
 	res, err := h.client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, NewCanNotDoRequestError(err)
 	}
 	defer res.Body.Close()
 
 	respBody, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return nil, NewCanNotReadResponseBodyError(err)
 	}
 
 	// Get response headers

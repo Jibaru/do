@@ -1,14 +1,9 @@
 package normalizer
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/jibaru/do/internal/types"
-)
-
-var (
-	ErrNormalizerEmptyContent = errors.New("empty content")
 )
 
 type Normalizer interface {
@@ -25,7 +20,7 @@ func (d *normalizer) Normalize(rawSectionContent types.RawSectionContent) (types
 	content := string(rawSectionContent)
 
 	if content = strings.TrimSpace(content); content == "" {
-		return "", ErrNormalizerEmptyContent
+		return "", NewEmptyContentError()
 	}
 
 	var result strings.Builder
