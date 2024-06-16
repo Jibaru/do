@@ -8,16 +8,18 @@ import (
 	"github.com/jibaru/do/internal/parser/extractor"
 	"github.com/jibaru/do/internal/parser/normalizer"
 	"github.com/jibaru/do/internal/parser/partitioner"
+	"github.com/jibaru/do/internal/parser/taker"
 	"github.com/jibaru/do/internal/types"
 )
 
-func TestSectionExtractor_Extract(t *testing.T) {
+func TestExtractor_Extract(t *testing.T) {
 	testCases := []struct {
 		name          string
 		section       types.Section
 		rawContent    types.FileReaderContent
 		expected      map[string]interface{}
 		expectedError error
+		takeFn        func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error)
 		normalizerFn  func(content types.RawSectionContent) (types.NormalizedSectionContent, error)
 		splitFn       func(content types.NormalizedSectionContent) (types.SectionExpressions, error)
 		analyzeFn     func(expressions types.SectionExpressions) (map[string]interface{}, error)
@@ -36,6 +38,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 					"Authorization": "Bearer token",
 				},
 				"body": `{"extra":true}`,
+			},
+			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+				return "method=\"GET\";url=\"https://localhost:8080/api/v1/tests\";params={\"id\":12};headers={\"Authorization\":\"Bearer token\"};body=`{\"extra\":true}`;", nil
 			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return types.NormalizedSectionContent(content), nil
@@ -73,6 +78,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 				"var3": false,
 				"var4": 12.33,
 			},
+			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+				return "var1=12;var2=\"text\";var3=false;var4=12.33;", nil
+			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `var1=12;var2="text";var3=false;var4=12.33;`, nil
 			},
@@ -98,6 +106,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			section:       types.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}`,
 			expectedError: errors.New("no block found"),
+			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+				return "", nil
+			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return "", nil
 			},
@@ -113,6 +124,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			section:       types.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}do`,
 			expectedError: errors.New("missing opening brace"),
+			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+				return "", nil
+			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return "", nil
 			},
@@ -128,6 +142,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			section:       types.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}do{method="GET";url="https://localhost:8080/api/v1/tests"`,
 			expectedError: errors.New("missing closing brace"),
+			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+				return "", nil
+			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return "", nil
 			},
@@ -147,6 +164,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 				"var2": "let",
 				"var3": false,
 				"var4": 12.33,
+			},
+			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+				return "var1=12;var2=\"let\";var3=false;var4=12.33;", nil
 			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `var1=12;var2="let";var3=false;var4=12.33;`, nil
@@ -176,6 +196,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 				"method": "GET",
 				"url":    "https://dolocalhost:8080/api/v1/tests",
 			},
+			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+				return "method=\"GET\";url=\"https://dolocalhost:8080/api/v1/tests\";", nil
+			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `method="GET";url="https://dolocalhost:8080/api/v1/tests";`, nil
 			},
@@ -197,6 +220,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			section:       types.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}do{method="GET";url="https://localhost:8080/api/v1/tests";body={};}`,
 			expectedError: errors.New("error parsing JSON value"),
+			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+				return "method=\"GET\";url=\"https://localhost:8080/api/v1/tests\";body={};", nil
+			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `method="GET";url="https://localhost:8080/api/v1/tests";body={};`, nil
 			},
@@ -216,6 +242,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 			section:       types.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}do{method="GET";url="https://localhost:8080/api/v1/tests";body={};}`,
 			expectedError: errors.New("error parsing boolean value"),
+			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+				return "method=\"GET\";url=\"https://localhost:8080/api/v1/tests\";body={};", nil
+			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `method="GET";url="https://localhost:8080/api/v1/tests";body={};`, nil
 			},
@@ -241,6 +270,9 @@ func TestSectionExtractor_Extract(t *testing.T) {
 				"var4": 12.33,
 				"var5": "{;",
 			},
+			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+				return "var1=12;var2=\"tex;;;t\";var3=false;var4=12.33;var5=\"{;\";", nil
+			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `var1=12;var2="tex;;;t";var3=false;var4=12.33;var5="{;";`, nil
 			},
@@ -265,10 +297,11 @@ func TestSectionExtractor_Extract(t *testing.T) {
 		},
 	}
 
-	mockNormalizer := &normalizer.Mock{}
-	mockPartitioner := &partitioner.Mock{}
-	mockAnalyzer := &analyzer.Mock{}
-	sectionExtractor := extractor.New(mockNormalizer, mockPartitioner, mockAnalyzer)
+	normalizerMock := &normalizer.Mock{}
+	partitionerMock := &partitioner.Mock{}
+	analyzerMock := &analyzer.Mock{}
+	takerMock := &taker.Mock{}
+	sectionExtractor := extractor.New(takerMock, normalizerMock, partitionerMock, analyzerMock)
 
 	isMap := func(i interface{}) bool {
 		_, ok := i.(map[string]interface{})
@@ -277,9 +310,10 @@ func TestSectionExtractor_Extract(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			mockNormalizer.NormalizeFn = tc.normalizerFn
-			mockPartitioner.SplitFn = tc.splitFn
-			mockAnalyzer.AnalyzeFn = tc.analyzeFn
+			takerMock.TakeFn = tc.takeFn
+			normalizerMock.NormalizeFn = tc.normalizerFn
+			partitionerMock.SplitFn = tc.splitFn
+			analyzerMock.AnalyzeFn = tc.analyzeFn
 
 			result, err := sectionExtractor.Extract(tc.section, tc.rawContent)
 
@@ -302,51 +336,6 @@ func TestSectionExtractor_Extract(t *testing.T) {
 					t.Errorf("expected %v, got %v", value, result[key])
 					t.Errorf("expected %T, got %T", value, result[key])
 				}
-			}
-		})
-	}
-}
-
-func TestSectionExtractor_ExtractContent(t *testing.T) {
-	testCases := []struct {
-		name          string
-		section       types.Section
-		text          types.FileReaderContent
-		expected      types.RawSectionContent
-		expectedError error
-	}{
-		{
-			name:     "success let section",
-			section:  types.LetSection,
-			text:     " let   {    var1 = 12; \n  var2 = \"text\"; \t   var3 = false;    var4 = 12.33;}",
-			expected: "    var1 = 12; \n  var2 = \"text\"; \t   var3 = false;    var4 = 12.33;",
-		},
-		{
-			name:     "success let section with multiple ; and {}",
-			section:  types.LetSection,
-			text:     "let{var1=12;var2=\"tex;;;t\";var3=false;var4=12.33;var5=\"{;\";}do{method=\"GET\";}",
-			expected: "var1=12;var2=\"tex;;;t\";var3=false;var4=12.33;var5=\"{;\";",
-		},
-		{
-			name:     "success do section",
-			section:  types.DoSection,
-			text:     "let {\n    var1 = 1;\n    var2 = \"hello\";\n    var3 = true;\n    var4 = false;\n}\n\ndo {\n    method = \"GET\";\n    url = \"http://example.com/:id\";\n    params = {\n        \"id\": \"$var1\"\n    };\n    headers = {\n        \"Content-Type\": \"application/json\",\n        \"X-Message\": \"$var2\"\n    };\n    body = `{\n        \"var1\": $var1,\n        \"var2\": \"$var2\",\n        \"var3\": $var3,\n        \"var4\": $var4\n    }`;\n}",
-			expected: "\n    method = \"GET\";\n    url = \"http://example.com/:id\";\n    params = {\n        \"id\": \"$var1\"\n    };\n    headers = {\n        \"Content-Type\": \"application/json\",\n        \"X-Message\": \"$var2\"\n    };\n    body = `{\n        \"var1\": $var1,\n        \"var2\": \"$var2\",\n        \"var3\": $var3,\n        \"var4\": $var4\n    }`;\n",
-		},
-	}
-
-	sectionExtractor := extractor.SectionExtractor{}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			content, err := sectionExtractor.ExtractContent(tc.section, tc.text)
-
-			if err != nil && ((tc.expectedError == nil) || (err.Error() != tc.expectedError.Error())) {
-				t.Errorf("expected error %v, got %v", tc.expectedError, err)
-			}
-
-			if content != tc.expected {
-				t.Errorf("expected %v, got %v", tc.expected, content)
 			}
 		})
 	}
