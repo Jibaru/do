@@ -6,20 +6,21 @@ import (
 
 	"github.com/jibaru/do/internal/parser/extractor"
 	"github.com/jibaru/do/internal/parser/normalizer"
+	"github.com/jibaru/do/internal/types"
 )
 
 func TestSectionExtractor_Extract(t *testing.T) {
 	testCases := []struct {
 		name          string
-		section       extractor.Section
-		rawContent    string
+		section       types.Section
+		rawContent    types.FileReaderContent
 		expected      map[string]interface{}
 		expectedError error
-		normalizerFn  func(content string) (string, error)
+		normalizerFn  func(content types.RawSectionContent) (types.NormalizedSectionContent, error)
 	}{
 		{
 			name:       "success do section",
-			section:    extractor.DoSection,
+			section:    types.DoSection,
 			rawContent: "let{}do{method=\"GET\";url=\"https://localhost:8080/api/v1/tests\";params={\"id\":12};headers={\"Authorization\":\"Bearer token\"};body=`{\"extra\":true}`;}",
 			expected: map[string]interface{}{
 				"method": "GET",
@@ -32,14 +33,13 @@ func TestSectionExtractor_Extract(t *testing.T) {
 				},
 				"body": `{"extra":true}`,
 			},
-			normalizerFn: func(content string) (string, error) {
-				t.Log(content)
-				return content, nil
+			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
+				return types.NormalizedSectionContent(content), nil
 			},
 		},
 		{
 			name:       "success let section",
-			section:    extractor.LetSection,
+			section:    types.LetSection,
 			rawContent: `let{var1=12;var2="text";var3=false;var4=12.33;}do{method="GET";url="https://localhost:8080/api/v1/tests"}`,
 			expected: map[string]interface{}{
 				"var1": 12,
@@ -47,40 +47,40 @@ func TestSectionExtractor_Extract(t *testing.T) {
 				"var3": false,
 				"var4": 12.33,
 			},
-			normalizerFn: func(content string) (string, error) {
+			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `var1=12;var2="text";var3=false;var4=12.33;`, nil
 			},
 		},
 		{
 			name:          "error no do block",
-			section:       extractor.DoSection,
+			section:       types.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}`,
 			expectedError: errors.New("no block found"),
-			normalizerFn: func(content string) (string, error) {
+			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return "", nil
 			},
 		},
 		{
 			name:          "error missing opening brace after do",
-			section:       extractor.DoSection,
+			section:       types.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}do`,
 			expectedError: errors.New("missing opening brace"),
-			normalizerFn: func(content string) (string, error) {
+			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return "", nil
 			},
 		},
 		{
 			name:          "error missing closing brace",
-			section:       extractor.DoSection,
+			section:       types.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}do{method="GET";url="https://localhost:8080/api/v1/tests"`,
 			expectedError: errors.New("missing closing brace"),
-			normalizerFn: func(content string) (string, error) {
+			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return "", nil
 			},
 		},
 		{
 			name:       "success let in string",
-			section:    extractor.LetSection,
+			section:    types.LetSection,
 			rawContent: `let{var1=12;var2="let";var3=false;var4=12.33;}do{method="GET";url="https://localhost:8080/api/v1/tests";body={};}`,
 			expected: map[string]interface{}{
 				"var1": 12,
@@ -88,43 +88,43 @@ func TestSectionExtractor_Extract(t *testing.T) {
 				"var3": false,
 				"var4": 12.33,
 			},
-			normalizerFn: func(content string) (string, error) {
+			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `var1=12;var2="let";var3=false;var4=12.33;`, nil
 			},
 		},
 		{
 			name:       "success do in string",
-			section:    extractor.DoSection,
+			section:    types.DoSection,
 			rawContent: `let{var1=12;var2="text";var3=false;var4=12.33;}do{method="GET";url="https://dolocalhost:8080/api/v1/tests";}`,
 			expected: map[string]interface{}{
 				"method": "GET",
 				"url":    "https://dolocalhost:8080/api/v1/tests",
 			},
-			normalizerFn: func(content string) (string, error) {
+			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `method="GET";url="https://dolocalhost:8080/api/v1/tests";`, nil
 			},
 		},
 		{
 			name:          "error parsing JSON",
-			section:       extractor.DoSection,
+			section:       types.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}do{method="GET";url="https://localhost:8080/api/v1/tests";body={};}`,
 			expectedError: errors.New("error parsing JSON value"),
-			normalizerFn: func(content string) (string, error) {
+			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `method="GET";url="https://localhost:8080/api/v1/tests";body={};`, nil
 			},
 		},
 		{
 			name:          "error parsing boolean value",
-			section:       extractor.DoSection,
+			section:       types.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}do{method="GET";url="https://localhost:8080/api/v1/tests";body={};}`,
 			expectedError: errors.New("error parsing boolean value"),
-			normalizerFn: func(content string) (string, error) {
+			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `method="GET";url="https://localhost:8080/api/v1/tests";body={};`, nil
 			},
 		},
 		{
 			name:       "success let section with multiple ; and {}",
-			section:    extractor.LetSection,
+			section:    types.LetSection,
 			rawContent: "let{var1=12;var2=\"tex;;;t\";var3=false;var4=12.33;var5=\"{;\";}do{method=\"GET\";}",
 			expected: map[string]interface{}{
 				"var1": 12,
@@ -133,7 +133,7 @@ func TestSectionExtractor_Extract(t *testing.T) {
 				"var4": 12.33,
 				"var5": "{;",
 			},
-			normalizerFn: func(content string) (string, error) {
+			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return `var1=12;var2="tex;;;t";var3=false;var4=12.33;var5="{;";`, nil
 			},
 		},
@@ -180,26 +180,26 @@ func TestSectionExtractor_Extract(t *testing.T) {
 func TestSectionExtractor_ExtractContent(t *testing.T) {
 	testCases := []struct {
 		name          string
-		section       extractor.Section
-		text          string
-		expected      string
+		section       types.Section
+		text          types.FileReaderContent
+		expected      types.RawSectionContent
 		expectedError error
 	}{
 		{
 			name:     "success let section",
-			section:  extractor.LetSection,
+			section:  types.LetSection,
 			text:     " let   {    var1 = 12; \n  var2 = \"text\"; \t   var3 = false;    var4 = 12.33;}",
 			expected: "    var1 = 12; \n  var2 = \"text\"; \t   var3 = false;    var4 = 12.33;",
 		},
 		{
 			name:     "success let section with multiple ; and {}",
-			section:  extractor.LetSection,
+			section:  types.LetSection,
 			text:     "let{var1=12;var2=\"tex;;;t\";var3=false;var4=12.33;var5=\"{;\";}do{method=\"GET\";}",
 			expected: "var1=12;var2=\"tex;;;t\";var3=false;var4=12.33;var5=\"{;\";",
 		},
 		{
 			name:     "success do section",
-			section:  extractor.DoSection,
+			section:  types.DoSection,
 			text:     "let {\n    var1 = 1;\n    var2 = \"hello\";\n    var3 = true;\n    var4 = false;\n}\n\ndo {\n    method = \"GET\";\n    url = \"http://example.com/:id\";\n    params = {\n        \"id\": \"$var1\"\n    };\n    headers = {\n        \"Content-Type\": \"application/json\",\n        \"X-Message\": \"$var2\"\n    };\n    body = `{\n        \"var1\": $var1,\n        \"var2\": \"$var2\",\n        \"var3\": $var3,\n        \"var4\": $var4\n    }`;\n}",
 			expected: "\n    method = \"GET\";\n    url = \"http://example.com/:id\";\n    params = {\n        \"id\": \"$var1\"\n    };\n    headers = {\n        \"Content-Type\": \"application/json\",\n        \"X-Message\": \"$var2\"\n    };\n    body = `{\n        \"var1\": $var1,\n        \"var2\": \"$var2\",\n        \"var3\": $var3,\n        \"var4\": $var4\n    }`;\n",
 		},

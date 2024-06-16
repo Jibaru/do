@@ -5,13 +5,14 @@ import (
 	"testing"
 
 	"github.com/jibaru/do/internal/reader"
+	"github.com/jibaru/do/internal/types"
 )
 
 func TestFileReader_Read(t *testing.T) {
 	testCases := []struct {
 		name          string
 		filename      string
-		expected      string
+		expected      types.FileReaderContent
 		expectedError error
 	}{
 		{

@@ -1,9 +1,11 @@
 package reader
 
-type MockFileReader struct {
-	ReadFn func(filename string) (string, error)
+import "github.com/jibaru/do/internal/types"
+
+type Mock struct {
+	ReadFn func(filename string) (types.FileReaderContent, error)
 }
 
-func (m *MockFileReader) Read(filename string) (string, error) {
+func (m *Mock) Read(filename string) (types.FileReaderContent, error) {
 	return m.ReadFn(filename)
 }

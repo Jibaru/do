@@ -3,6 +3,8 @@ package normalizer
 import (
 	"errors"
 	"strings"
+
+	"github.com/jibaru/do/internal/types"
 )
 
 var (
@@ -10,7 +12,7 @@ var (
 )
 
 type Normalizer interface {
-	Normalize(content string) (string, error)
+	Normalize(content types.RawSectionContent) (types.NormalizedSectionContent, error)
 }
 
 type normalizer struct{}
@@ -19,7 +21,9 @@ func New() Normalizer {
 	return &normalizer{}
 }
 
-func (d *normalizer) Normalize(content string) (string, error) {
+func (d *normalizer) Normalize(rawSectionContent types.RawSectionContent) (types.NormalizedSectionContent, error) {
+	content := string(rawSectionContent)
+
 	if content = strings.TrimSpace(content); content == "" {
 		return "", ErrNormalizerEmptyContent
 	}
@@ -41,6 +45,5 @@ func (d *normalizer) Normalize(content string) (string, error) {
 		}
 	}
 
-	return result.String(), nil
-
+	return types.NormalizedSectionContent(result.String()), nil
 }

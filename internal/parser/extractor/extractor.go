@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/jibaru/do/internal/parser/normalizer"
+	"github.com/jibaru/do/internal/types"
 )
 
 var (
@@ -18,15 +19,8 @@ var (
 	ErrSectionExtractorParsingBooleanValue = errors.New("error parsing boolean value")
 )
 
-type Section string
-
-const (
-	LetSection Section = "let"
-	DoSection  Section = "do"
-)
-
 type Extractor interface {
-	Extract(section Section, rawContent string) (map[string]interface{}, error)
+	Extract(section types.Section, rawContent types.FileReaderContent) (map[string]interface{}, error)
 }
 
 type SectionExtractor struct {
@@ -41,7 +35,7 @@ func New(
 	}
 }
 
-func (d *SectionExtractor) Extract(section Section, rawContent string) (map[string]interface{}, error) {
+func (d *SectionExtractor) Extract(section types.Section, rawContent types.FileReaderContent) (map[string]interface{}, error) {
 	content, err := d.ExtractContent(section, rawContent)
 	if err != nil {
 		return nil, err
@@ -58,7 +52,7 @@ func (d *SectionExtractor) Extract(section Section, rawContent string) (map[stri
 	return d.parse(normalizedContent)
 }
 
-func (d *SectionExtractor) ExtractContent(section Section, text string) (string, error) {
+func (d *SectionExtractor) ExtractContent(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
 	inBlock := false
 	textInNoBlocks := strings.Builder{}
 
@@ -139,10 +133,10 @@ func (d *SectionExtractor) ExtractContent(section Section, text string) (string,
 		return "", ErrSectionExtractorNoBlock
 	}
 
-	return sectionContent, nil
+	return types.RawSectionContent(sectionContent), nil
 }
 
-func (d *SectionExtractor) Parts(normalizedContent string) []string {
+func (d *SectionExtractor) Parts(normalizedContent types.NormalizedSectionContent) []string {
 	parts := make([]string, 0)
 	currentPart := strings.Builder{}
 	inString := false
@@ -170,7 +164,7 @@ func (d *SectionExtractor) Parts(normalizedContent string) []string {
 	return parts
 }
 
-func (d *SectionExtractor) parse(normalizedContent string) (map[string]interface{}, error) {
+func (d *SectionExtractor) parse(normalizedContent types.NormalizedSectionContent) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
 
 	lines := d.Parts(normalizedContent)

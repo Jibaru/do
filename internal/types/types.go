@@ -1,5 +1,17 @@
 package types
 
+// Section defines the type of section
+type Section string
+
+// FileReaderContent defines the content of a .do file
+type FileReaderContent string
+
+// RawSectionContent defines the raw content of a section
+type RawSectionContent string
+
+// NormalizedSectionContent defines the normalized content of a section
+type NormalizedSectionContent string
+
 // Let defines the variables section
 type Let struct {
 	Variables map[string]interface{} `json:"variables"`
@@ -21,8 +33,14 @@ type DoFile struct {
 	Do  Do  `json:"do"`
 }
 
+// Response defines the response of a request
 type Response struct {
 	StatusCode int                    `json:"status_code"`
 	Body       string                 `json:"body"`
 	Headers    map[string]interface{} `json:"headers"`
 }
+
+const (
+	LetSection Section = "let"
+	DoSection  Section = "do"
+)

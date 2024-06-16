@@ -17,8 +17,8 @@ func TestParser_FromFilename(t *testing.T) {
 		filename      string
 		expected      *types.DoFile
 		expectedError error
-		FileReaderFn  func(filename string) (string, error)
-		ExtractorFn   func(section extractor.Section, content string) (map[string]interface{}, error)
+		FileReaderFn  func(filename string) (types.FileReaderContent, error)
+		ExtractorFn   func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error)
 		ReplacerFn    func(doVariables map[string]interface{}, letVariables map[string]interface{})
 	}{
 		{
@@ -42,11 +42,11 @@ func TestParser_FromFilename(t *testing.T) {
 					Body:    "{\"extra\": 12, \"extra2\": false, \"extra3\": \"text\", \"extra4\": 12.33}",
 				},
 			},
-			FileReaderFn: func(filename string) (string, error) {
+			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
 				return "let{var1=12;var2=\"text\";var3=false;var4=12.33;}do{method=\"GET\";url=\"http://localhost:8080/api/todos/:id\";params={\"id\":\"$id\"};query={\"isOk\":\"$isOk\"};headers={\"Authorization\":\"Bearer $token\"};body=`{\"extra\": $extra, \"extra2\": $extra2, \"extra3\": \"$extra3\", \"extra4\": $extra4}`;}", nil
 			},
-			ExtractorFn: func(section extractor.Section, content string) (map[string]interface{}, error) {
-				if section == extractor.LetSection {
+			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+				if section == types.LetSection {
 					return map[string]interface{}{
 						"var1": 12,
 						"var2": "text",
@@ -55,7 +55,7 @@ func TestParser_FromFilename(t *testing.T) {
 					}, nil
 				}
 
-				if section == extractor.DoSection {
+				if section == types.DoSection {
 					return map[string]interface{}{
 						"method":  "GET",
 						"url":     "http://localhost:8080/api/todos/:id",
@@ -77,7 +77,7 @@ func TestParser_FromFilename(t *testing.T) {
 		},
 	}
 
-	fileReader := &reader.MockFileReader{}
+	fileReader := &reader.Mock{}
 	sectionExtractor := &extractor.Mock{}
 	varReplacer := &replacer.Mock{}
 

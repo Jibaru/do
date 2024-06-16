@@ -5,13 +5,14 @@ import (
 	"testing"
 
 	"github.com/jibaru/do/internal/parser/normalizer"
+	"github.com/jibaru/do/internal/types"
 )
 
 func TestDoSectionNormalizer_Normalize(t *testing.T) {
 	testCases := []struct {
 		name          string
-		content       string
-		expected      string
+		content       types.RawSectionContent
+		expected      types.NormalizedSectionContent
 		expectedError error
 	}{
 		{
