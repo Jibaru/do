@@ -1,9 +1,6 @@
-<div style="align: center;">
-<img src="screenshots/logo.png" width="180px"/>
-</div>
-
-<div style="align: center;">
-<i>HTTP Requests in plain text</i>
+<div align="center">
+    <img src="screenshots/logo.png" width="180px"/>
+    <p style="font-style: italic">HTTP Requests in plain text</p>
 </div>
 
 <br/>
@@ -29,7 +26,6 @@ let {
     userId = 23;
     token = "the-http-token";
     deleted = false;
-    // Add more variables here...
 }
 
 do {
