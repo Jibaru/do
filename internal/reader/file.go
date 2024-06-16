@@ -1,15 +1,9 @@
 package reader
 
 import (
-	"errors"
-	"log"
 	"os"
 
 	"github.com/jibaru/do/internal/types"
-)
-
-var (
-	ErrFileReaderCannotRead = errors.New("cannot read file")
 )
 
 type FileReader interface {
@@ -25,8 +19,7 @@ func NewFileReader() FileReader {
 func (d *fileReader) Read(filename string) (types.FileReaderContent, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		log.Println("error reading file:", err)
-		return "", ErrFileReaderCannotRead
+		return "", NewCanNotReadFileError(err)
 	}
 
 	return types.FileReaderContent(data), nil

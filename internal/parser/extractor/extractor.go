@@ -41,7 +41,7 @@ func New(
 
 func (d *SectionExtractor) Extract(section types.Section, rawContent types.FileReaderContent) (map[string]interface{}, error) {
 	content, err := d.sectionTaker.Take(section, rawContent)
-	if err != nil && errors.Is(err, taker.ErrNoBlock) {
+	if err != nil && errors.Is(err, taker.NoBlockError{}) {
 		return nil, ErrSectionExtractorNoBlock
 	} else if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func (d *SectionExtractor) Extract(section types.Section, rawContent types.FileR
 
 	normalizedContent, err := d.sectionNormalizer.Normalize(content)
 	if err != nil {
-		if errors.Is(err, normalizer.ErrNormalizerEmptyContent) {
+		if errors.Is(err, normalizer.EmptyContentError{}) {
 			return nil, ErrSectionExtractorNoBlock
 		}
 		return nil, err

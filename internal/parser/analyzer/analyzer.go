@@ -3,7 +3,6 @@ package analyzer
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"strconv"
 	"strings"
 
@@ -62,8 +61,7 @@ func (a *analyzer) Analyze(expressions types.SectionExpressions) (map[string]int
 	for _, line := range expressions {
 		parts := strings.SplitN(line, "=", 2)
 		if len(parts) != 2 {
-			log.Println("error reading do section line:", parts, len(parts))
-			continue
+			return nil, NewReadingExpressionError(parts...)
 		}
 
 		key := strings.TrimSpace(parts[0])
@@ -76,14 +74,14 @@ func (a *analyzer) Analyze(expressions types.SectionExpressions) (map[string]int
 			// if value is a JSON object
 			var obj map[string]interface{}
 			if err := json.Unmarshal([]byte(value), &obj); err != nil {
-				return nil, ErrParsingMapValue
+				return nil, NewCanNotParseMapValueError(err)
 			}
 			result[key] = obj
 		} else if isBool(value) {
 			// if value is a boolean
 			b, err := strconv.ParseBool(value)
 			if err != nil {
-				return nil, ErrParsingBooleanValue
+				return nil, NewCanNotParseBoolValueError(err)
 			}
 			result[key] = b
 		} else if num, ok := isInt(value); ok {
