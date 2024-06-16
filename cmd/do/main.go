@@ -3,12 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jibaru/do/internal/reader"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/jibaru/do/internal/parser"
+	"github.com/jibaru/do/internal/parser/extractor"
+	"github.com/jibaru/do/internal/parser/normalizer"
+	"github.com/jibaru/do/internal/parser/replacer"
+	"github.com/jibaru/do/internal/reader"
 	"github.com/jibaru/do/internal/request"
 )
 
@@ -21,13 +24,13 @@ func main() {
 	filename := os.Args[1]
 
 	doFileReader := reader.NewFileReader()
-	doSectionNormalizer := parser.NewNormalizer()
-	sectionExtractor := parser.NewSectionExtractor(doSectionNormalizer)
-	variablesReplacer := parser.NewVariablesReplacer()
-	psr := parser.New(doFileReader, sectionExtractor, variablesReplacer)
+	sectionNormalizer := normalizer.New()
+	sectionExtractor := extractor.New(sectionNormalizer)
+	variablesReplacer := replacer.New()
+	theParser := parser.New(doFileReader, sectionExtractor, variablesReplacer)
 	client := request.NewHttpClient(&http.Client{})
 
-	doFile, err := psr.FromFilename(filename)
+	doFile, err := theParser.FromFilename(filename)
 	if err != nil {
 		log.Printf("error parsing: %v\n", err)
 		return

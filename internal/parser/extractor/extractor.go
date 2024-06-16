@@ -1,4 +1,4 @@
-package parser
+package extractor
 
 import (
 	"encoding/json"
@@ -6,6 +6,8 @@ import (
 	"log"
 	"strconv"
 	"strings"
+
+	"github.com/jibaru/do/internal/parser/normalizer"
 )
 
 var (
@@ -23,31 +25,31 @@ const (
 	DoSection  Section = "do"
 )
 
-type SectionExtractor interface {
+type Extractor interface {
 	Extract(section Section, rawContent string) (map[string]interface{}, error)
 }
 
-type TheSectionExtractor struct {
-	doSectionNormalizer Normalizer
+type SectionExtractor struct {
+	sectionNormalizer normalizer.Normalizer
 }
 
-func NewSectionExtractor(
-	doSectionNormalizer Normalizer,
-) SectionExtractor {
-	return &TheSectionExtractor{
-		doSectionNormalizer,
+func New(
+	sectionNormalizer normalizer.Normalizer,
+) Extractor {
+	return &SectionExtractor{
+		sectionNormalizer,
 	}
 }
 
-func (d *TheSectionExtractor) Extract(section Section, rawContent string) (map[string]interface{}, error) {
+func (d *SectionExtractor) Extract(section Section, rawContent string) (map[string]interface{}, error) {
 	content, err := d.ExtractContent(section, rawContent)
 	if err != nil {
 		return nil, err
 	}
 
-	normalizedContent, err := d.doSectionNormalizer.Normalize(content)
+	normalizedContent, err := d.sectionNormalizer.Normalize(content)
 	if err != nil {
-		if errors.Is(err, ErrNormalizerEmptyContent) {
+		if errors.Is(err, normalizer.ErrNormalizerEmptyContent) {
 			return nil, ErrSectionExtractorNoBlock
 		}
 		return nil, err
@@ -56,7 +58,7 @@ func (d *TheSectionExtractor) Extract(section Section, rawContent string) (map[s
 	return d.parse(normalizedContent)
 }
 
-func (d *TheSectionExtractor) ExtractContent(section Section, text string) (string, error) {
+func (d *SectionExtractor) ExtractContent(section Section, text string) (string, error) {
 	inBlock := false
 	textInNoBlocks := strings.Builder{}
 
@@ -140,7 +142,7 @@ func (d *TheSectionExtractor) ExtractContent(section Section, text string) (stri
 	return sectionContent, nil
 }
 
-func (d *TheSectionExtractor) Parts(normalizedContent string) []string {
+func (d *SectionExtractor) Parts(normalizedContent string) []string {
 	parts := make([]string, 0)
 	currentPart := strings.Builder{}
 	inString := false
@@ -168,7 +170,7 @@ func (d *TheSectionExtractor) Parts(normalizedContent string) []string {
 	return parts
 }
 
-func (d *TheSectionExtractor) parse(normalizedContent string) (map[string]interface{}, error) {
+func (d *SectionExtractor) parse(normalizedContent string) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
 
 	lines := d.Parts(normalizedContent)

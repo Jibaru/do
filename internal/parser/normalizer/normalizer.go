@@ -1,4 +1,4 @@
-package parser
+package normalizer
 
 import (
 	"errors"
@@ -15,7 +15,7 @@ type Normalizer interface {
 
 type normalizer struct{}
 
-func NewNormalizer() Normalizer {
+func New() Normalizer {
 	return &normalizer{}
 }
 

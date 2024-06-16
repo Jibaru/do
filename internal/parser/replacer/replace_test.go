@@ -1,9 +1,9 @@
-package parser_test
+package replacer_test
 
 import (
 	"testing"
 
-	"github.com/jibaru/do/internal/parser"
+	"github.com/jibaru/do/internal/parser/replacer"
 )
 
 func TestVariablesReplacer_Replace(t *testing.T) {
@@ -113,11 +113,11 @@ func TestVariablesReplacer_Replace(t *testing.T) {
 		},
 	}
 
-	replacer := parser.NewVariablesReplacer()
+	varReplacer := replacer.New()
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			replacer.Replace(tc.doVariables, tc.letVariables)
+			varReplacer.Replace(tc.doVariables, tc.letVariables)
 
 			for key, value := range tc.doVariables {
 				switch val := value.(type) {

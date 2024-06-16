@@ -1,10 +1,10 @@
-package parser_test
+package normalizer_test
 
 import (
 	"errors"
 	"testing"
 
-	"github.com/jibaru/do/internal/parser"
+	"github.com/jibaru/do/internal/parser/normalizer"
 )
 
 func TestDoSectionNormalizer_Normalize(t *testing.T) {
@@ -41,11 +41,11 @@ func TestDoSectionNormalizer_Normalize(t *testing.T) {
 		},
 	}
 
-	normalizer := parser.NewNormalizer()
+	norm := normalizer.New()
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			normalizedContent, err := normalizer.Normalize(tc.content)
+			normalizedContent, err := norm.Normalize(tc.content)
 
 			if err != nil && err.Error() != tc.expectedError.Error() {
 				t.Errorf("expected error %v, got %v", tc.expectedError, err)

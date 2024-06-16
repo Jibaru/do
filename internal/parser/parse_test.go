@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/jibaru/do/internal/parser"
+	"github.com/jibaru/do/internal/parser/extractor"
+	"github.com/jibaru/do/internal/parser/replacer"
 	"github.com/jibaru/do/internal/reader"
 	"github.com/jibaru/do/internal/types"
 )
@@ -16,7 +18,7 @@ func TestParser_FromFilename(t *testing.T) {
 		expected      *types.DoFile
 		expectedError error
 		FileReaderFn  func(filename string) (string, error)
-		ExtractorFn   func(section parser.Section, content string) (map[string]interface{}, error)
+		ExtractorFn   func(section extractor.Section, content string) (map[string]interface{}, error)
 		ReplacerFn    func(doVariables map[string]interface{}, letVariables map[string]interface{})
 	}{
 		{
@@ -43,8 +45,8 @@ func TestParser_FromFilename(t *testing.T) {
 			FileReaderFn: func(filename string) (string, error) {
 				return "let{var1=12;var2=\"text\";var3=false;var4=12.33;}do{method=\"GET\";url=\"http://localhost:8080/api/todos/:id\";params={\"id\":\"$id\"};query={\"isOk\":\"$isOk\"};headers={\"Authorization\":\"Bearer $token\"};body=`{\"extra\": $extra, \"extra2\": $extra2, \"extra3\": \"$extra3\", \"extra4\": $extra4}`;}", nil
 			},
-			ExtractorFn: func(section parser.Section, content string) (map[string]interface{}, error) {
-				if section == parser.LetSection {
+			ExtractorFn: func(section extractor.Section, content string) (map[string]interface{}, error) {
+				if section == extractor.LetSection {
 					return map[string]interface{}{
 						"var1": 12,
 						"var2": "text",
@@ -53,7 +55,7 @@ func TestParser_FromFilename(t *testing.T) {
 					}, nil
 				}
 
-				if section == parser.DoSection {
+				if section == extractor.DoSection {
 					return map[string]interface{}{
 						"method":  "GET",
 						"url":     "http://localhost:8080/api/todos/:id",
@@ -76,16 +78,16 @@ func TestParser_FromFilename(t *testing.T) {
 	}
 
 	fileReader := &reader.MockFileReader{}
-	extractor := &parser.MockSectionExtractor{}
-	replacer := &parser.MockVariablesReplacer{}
+	sectionExtractor := &extractor.Mock{}
+	varReplacer := &replacer.Mock{}
 
-	p := parser.New(fileReader, extractor, replacer)
+	p := parser.New(fileReader, sectionExtractor, varReplacer)
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			fileReader.ReadFn = tc.FileReaderFn
-			extractor.ExtractFn = tc.ExtractorFn
-			replacer.ReplaceFn = tc.ReplacerFn
+			sectionExtractor.ExtractFn = tc.ExtractorFn
+			varReplacer.ReplaceFn = tc.ReplacerFn
 
 			doFile, err := p.FromFilename(tc.filename)
 

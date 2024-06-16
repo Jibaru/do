@@ -3,6 +3,8 @@ package parser
 import (
 	"errors"
 
+	"github.com/jibaru/do/internal/parser/extractor"
+	"github.com/jibaru/do/internal/parser/replacer"
 	"github.com/jibaru/do/internal/reader"
 	"github.com/jibaru/do/internal/types"
 )
@@ -19,14 +21,14 @@ type Parser interface {
 
 type parser struct {
 	doFileReader      reader.FileReader
-	sectionExtractor  SectionExtractor
-	variablesReplacer VariablesReplacer
+	sectionExtractor  extractor.Extractor
+	variablesReplacer replacer.Replacer
 }
 
 func New(
 	doFileReader reader.FileReader,
-	sectionExtractor SectionExtractor,
-	variablesReplacer VariablesReplacer,
+	sectionExtractor extractor.Extractor,
+	variablesReplacer replacer.Replacer,
 ) Parser {
 	return &parser{
 		doFileReader,
@@ -41,16 +43,16 @@ func (p *parser) FromFilename(filename string) (*types.DoFile, error) {
 		return nil, err
 	}
 
-	letVariables, err := p.sectionExtractor.Extract(LetSection, content)
+	letVariables, err := p.sectionExtractor.Extract(extractor.LetSection, content)
 	if err != nil {
-		if errors.Is(err, ErrSectionExtractorNoBlock) {
+		if errors.Is(err, extractor.ErrSectionExtractorNoBlock) {
 			letVariables = nil
 		} else {
 			return nil, err
 		}
 	}
 
-	doVariables, err := p.sectionExtractor.Extract(DoSection, content)
+	doVariables, err := p.sectionExtractor.Extract(extractor.DoSection, content)
 	if err != nil {
 		return nil, err
 	}
