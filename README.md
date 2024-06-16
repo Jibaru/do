@@ -1,8 +1,8 @@
-<div style="text-align: center;">
+<div style="align: center;">
 <img src="screenshots/logo.png" width="180px"/>
 </div>
 
-<div style="text-align: center;">
+<div style="align: center;">
 <i>HTTP Requests in plain text</i>
 </div>
 
