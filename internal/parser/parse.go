@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	ErrParserDoSectionEmpty = errors.New("do section is empty")
-	ErrParserMethodRequired = errors.New("method is required")
-	ErrParserURLRequired    = errors.New("url is required")
+	ErrDoSectionEmpty = errors.New("do section is empty")
+	ErrMethodRequired = errors.New("method is required")
+	ErrURLRequired    = errors.New("url is required")
 )
 
 type Parser interface {
@@ -58,15 +58,15 @@ func (p *parser) FromFilename(filename string) (*types.DoFile, error) {
 	}
 
 	if doVariables == nil {
-		return nil, ErrParserDoSectionEmpty
+		return nil, ErrDoSectionEmpty
 	}
 
 	if doVariables["method"] == nil {
-		return nil, ErrParserMethodRequired
+		return nil, ErrMethodRequired
 	}
 
 	if doVariables["url"] == nil {
-		return nil, ErrParserURLRequired
+		return nil, ErrURLRequired
 	}
 
 	p.variablesReplacer.Replace(doVariables, letVariables)
