@@ -42,8 +42,3 @@ type Response struct {
 	Body       string                 `json:"body"`
 	Headers    map[string]interface{} `json:"headers"`
 }
-
-const (
-	LetSection Section = "let"
-	DoSection  Section = "do"
-)

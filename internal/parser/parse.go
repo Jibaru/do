@@ -61,11 +61,11 @@ func (p *parser) FromFilename(filename string) (*types.DoFile, error) {
 		return nil, ErrDoSectionEmpty
 	}
 
-	if doVariables["method"] == nil {
+	if doVariables[types.DoMethod] == nil {
 		return nil, ErrMethodRequired
 	}
 
-	if doVariables["url"] == nil {
+	if doVariables[types.DoURL] == nil {
 		return nil, ErrURLRequired
 	}
 
@@ -76,24 +76,24 @@ func (p *parser) FromFilename(filename string) (*types.DoFile, error) {
 			Variables: letVariables,
 		},
 		Do: types.Do{
-			Method: doVariables["method"].(string),
-			URL:    doVariables["url"].(string),
+			Method: doVariables[types.DoMethod].(string),
+			URL:    doVariables[types.DoURL].(string),
 		},
 	}
 
-	if mp, ok := doVariables["params"]; ok {
+	if mp, ok := doVariables[types.DoParams]; ok {
 		doFile.Do.Params = mp.(map[string]interface{})
 	}
 
-	if mp, ok := doVariables["query"]; ok {
+	if mp, ok := doVariables[types.DoQuery]; ok {
 		doFile.Do.Query = mp.(map[string]interface{})
 	}
 
-	if mp, ok := doVariables["headers"]; ok {
+	if mp, ok := doVariables[types.DoHeaders]; ok {
 		doFile.Do.Headers = mp.(map[string]interface{})
 	}
 
-	if mp, ok := doVariables["body"]; ok {
+	if mp, ok := doVariables[types.DoBody]; ok {
 		doFile.Do.Body = mp.(string)
 	}
 
