@@ -1,10 +1,11 @@
 package partitioner_test
 
 import (
-	"github.com/jibaru/do/internal/parser/partitioner"
-	"github.com/jibaru/do/internal/types"
 	"reflect"
 	"testing"
+
+	"github.com/jibaru/do/internal/parser/partitioner"
+	"github.com/jibaru/do/internal/types"
 )
 
 func TestPartitioner_Split(t *testing.T) {
