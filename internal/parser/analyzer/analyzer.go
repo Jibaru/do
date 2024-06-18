@@ -2,16 +2,10 @@ package analyzer
 
 import (
 	"encoding/json"
-	"errors"
 	"strconv"
 	"strings"
 
 	"github.com/jibaru/do/internal/types"
-)
-
-var (
-	ErrParsingMapValue     = errors.New("error parsing JSON value")
-	ErrParsingBooleanValue = errors.New("error parsing boolean value")
 )
 
 type Analyzer interface {
@@ -73,16 +67,11 @@ func (a *analyzer) Analyze(expressions types.SectionExpressions) (map[string]int
 		} else if isMap(value) {
 			// if value is a JSON object
 			var obj map[string]interface{}
-			if err := json.Unmarshal([]byte(value), &obj); err != nil {
-				return nil, NewCanNotParseMapValueError(err)
-			}
+			_ = json.Unmarshal([]byte(value), &obj)
 			result[key] = obj
 		} else if isBool(value) {
 			// if value is a boolean
-			b, err := strconv.ParseBool(value)
-			if err != nil {
-				return nil, NewCanNotParseBoolValueError(err)
-			}
+			b, _ := strconv.ParseBool(value)
 			result[key] = b
 		} else if num, ok := isInt(value); ok {
 			// if value is an integer
