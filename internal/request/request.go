@@ -46,8 +46,8 @@ func (h *httpClient) Do(doFile types.DoFile) (*types.Response, error) {
 	}
 	req.URL.RawQuery = query.Encode()
 
-	if doFile.Do.Body != "" {
-		req.Body = io.NopCloser(strings.NewReader(doFile.Do.Body))
+	if doFile.Do.Body != nil {
+		req.Body = io.NopCloser(strings.NewReader(*doFile.Do.Body))
 	}
 
 	res, err := h.client.Do(req)

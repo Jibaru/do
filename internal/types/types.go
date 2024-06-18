@@ -27,7 +27,7 @@ type Do struct {
 	Params  map[string]interface{} `json:"params"`
 	Query   map[string]interface{} `json:"query"`
 	Headers map[string]interface{} `json:"headers"`
-	Body    string                 `json:"body"`
+	Body    *string                `json:"body"`
 }
 
 // DoFile is the representation of file.do

@@ -11,6 +11,10 @@ import (
 	"github.com/jibaru/do/internal/types"
 )
 
+func ptr[T any](s T) *T {
+	return &s
+}
+
 func TestParser_FromFilename(t *testing.T) {
 	testCases := []struct {
 		name          string
@@ -39,7 +43,7 @@ func TestParser_FromFilename(t *testing.T) {
 					Params:  map[string]interface{}{"id": "12"},
 					Query:   map[string]interface{}{"isOk": "false"},
 					Headers: map[string]interface{}{"Authorization": "Bearer text"},
-					Body:    "{\"extra\": 12, \"extra2\": false, \"extra3\": \"text\", \"extra4\": 12.33}",
+					Body:    ptr("{\"extra\": 12, \"extra2\": false, \"extra3\": \"text\", \"extra4\": 12.33}"),
 				},
 			},
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
