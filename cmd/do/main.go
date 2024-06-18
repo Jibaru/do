@@ -1,9 +1,7 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
@@ -16,11 +14,12 @@ import (
 	"github.com/jibaru/do/internal/parser/taker"
 	"github.com/jibaru/do/internal/reader"
 	"github.com/jibaru/do/internal/request"
+	"github.com/jibaru/do/internal/types"
 )
 
 func main() {
 	if len(os.Args) < 2 {
-		log.Println("use: do <filename.do>")
+		fmt.Println("use: do <filename.do>")
 		return
 	}
 
@@ -36,21 +35,24 @@ func main() {
 	theParser := parser.New(doFileReader, sectionExtractor, variablesReplacer)
 	client := request.NewHttpClient(&http.Client{})
 
+	output := types.CommandLineOutput{}
+
 	doFile, err := theParser.ParseFromFilename(filename)
 	if err != nil {
-		log.Printf("error parsing: %v\n", err)
+		output.Error = err.Error()
+		fmt.Println(output.MarshalIndent())
 		return
 	}
 
-	doFileAsJson, _ := json.MarshalIndent(doFile, "", "   ")
-	fmt.Printf("request: %s\n", string(doFileAsJson))
+	output.DoFile = *doFile
 
 	response, err := client.Do(*doFile)
 	if err != nil {
-		fmt.Printf("error in request: %v\n", err)
+		output.Error = err.Error()
+		fmt.Println(output.MarshalIndent())
 		return
 	}
 
-	responseAsJson, _ := json.MarshalIndent(response, "", "   ")
-	fmt.Printf("response: %s\n", string(responseAsJson))
+	output.Response = response
+	fmt.Println(output.MarshalIndent())
 }

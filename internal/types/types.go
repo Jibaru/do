@@ -1,5 +1,9 @@
 package types
 
+import (
+	"encoding/json"
+)
+
 // Section defines the type of section
 type Section string
 
@@ -41,4 +45,17 @@ type Response struct {
 	StatusCode int                    `json:"status_code"`
 	Body       string                 `json:"body"`
 	Headers    map[string]interface{} `json:"headers"`
+}
+
+// CommandLineOutput defines the output of the command line
+type CommandLineOutput struct {
+	DoFile   DoFile    `json:"do_file"`
+	Response *Response `json:"response"`
+	Error    string    `json:"error"`
+}
+
+// MarshalIndent returns the JSON representation of CommandLineOutput
+func (c CommandLineOutput) MarshalIndent() string {
+	value, _ := json.MarshalIndent(c, "", "   ")
+	return string(value)
 }
