@@ -15,6 +15,7 @@ import (
 	"github.com/jibaru/do/internal/reader"
 	"github.com/jibaru/do/internal/request"
 	"github.com/jibaru/do/internal/types"
+	"github.com/jibaru/do/internal/utils"
 )
 
 func main() {
@@ -39,7 +40,7 @@ func main() {
 
 	doFile, err := theParser.ParseFromFilename(filename)
 	if err != nil {
-		output.Error = err.Error()
+		output.Error = utils.Ptr(err.Error())
 		fmt.Println(output.MarshalIndent())
 		return
 	}
@@ -48,7 +49,7 @@ func main() {
 
 	response, err := client.Do(*doFile)
 	if err != nil {
-		output.Error = err.Error()
+		output.Error = utils.Ptr(err.Error())
 		fmt.Println(output.MarshalIndent())
 		return
 	}

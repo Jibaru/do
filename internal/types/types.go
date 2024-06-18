@@ -51,7 +51,7 @@ type Response struct {
 type CommandLineOutput struct {
 	DoFile   DoFile    `json:"do_file"`
 	Response *Response `json:"response"`
-	Error    string    `json:"error"`
+	Error    *string   `json:"error"`
 }
 
 // MarshalIndent returns the JSON representation of CommandLineOutput
