@@ -19,10 +19,18 @@ Execute:
 go install github.com/jibaru/do/cmd/do@latest
 ```
 
-Also you can rename to dohttp:
+Also you can rename to dohttp.
+
+Unix:
 
 ```
 mv ~/go/bin/do ~/go/bin/dohttp
+```
+
+Windows (CMD):
+
+```
+move %USERPROFILE%\go\bin\do.exe %USERPROFILE%\go\bin\dohttp.exe
 ```
 
 ## Usage
