@@ -11,6 +11,20 @@ Do is a Go program that parses custom `.do` files and executes HTTP requests bas
 
 I created `do` because I needed a way to version HTTP requests and distribute them across teams in a simple, plaintext format. `.do` files provide a human-readable and easily shareable way to define HTTP requests, making it convenient for collaboration and version control.
 
+## Installation
+
+Execute:
+
+```
+go install github.com/jibaru/do/cmd/do@latest
+```
+
+Also you can rename to dohttp:
+
+```
+mv ~/go/bin/do ~/go/bin/dohttp
+```
+
 ## Usage
 
 Execute your `filename.do` files:
