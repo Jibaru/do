@@ -18,9 +18,12 @@ func New() Analyzer {
 	return &analyzer{}
 }
 
-func isString(value string) bool {
-	return (strings.HasPrefix(value, `"`) && strings.HasSuffix(value, `"`)) ||
-		(strings.HasPrefix(value, "`") && strings.HasSuffix(value, "`"))
+func isStringByQuotes(value string) bool {
+	return (strings.HasPrefix(value, `"`) && strings.HasSuffix(value, `"`))
+}
+
+func isStringByBackticks(value string) bool {
+	return (strings.HasPrefix(value, "`") && strings.HasSuffix(value, "`"))
 }
 
 func isMap(value string) bool {
@@ -61,9 +64,12 @@ func (a *analyzer) Analyze(expressions types.SectionExpressions) (map[string]int
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
 
-		if isString(value) {
+		if isStringByQuotes(value) {
 			// if value is a string
 			result[key] = strings.Trim(value, `"`)
+		} else if isStringByBackticks(value) {
+			// if value is a string
+			result[key] = strings.Trim(value, "`")
 		} else if isMap(value) {
 			// if value is a JSON object
 			var obj map[string]interface{}

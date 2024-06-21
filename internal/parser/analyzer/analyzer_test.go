@@ -38,7 +38,7 @@ func TestAnalyzer_Analyze(t *testing.T) {
 					"key1": float64(1),
 					"key2": "hello",
 				},
-				"var7": "`something here`",
+				"var7": "something here",
 				"var8": "=string=with=another=",
 			},
 		},
