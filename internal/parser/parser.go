@@ -2,6 +2,7 @@ package parser
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/jibaru/do/internal/parser/extractor"
 	"github.com/jibaru/do/internal/parser/replacer"
@@ -61,6 +62,52 @@ func (p *parser) ParseFromFilename(filename string) (*types.DoFile, error) {
 
 	if doVariables[types.DoURL] == nil {
 		return nil, NewURLRequiredError()
+	}
+
+	if _, ok := doVariables[types.DoMethod].(types.String); !ok {
+		return nil, NewTypeNotExpectedError(
+			types.DoMethod,
+			fmt.Sprintf("%T", types.String("")),
+			fmt.Sprintf("%T", doVariables[types.DoMethod]),
+		)
+	}
+
+	if _, ok := doVariables[types.DoURL].(types.String); !ok {
+		return nil, NewTypeNotExpectedError(
+			types.DoURL,
+			fmt.Sprintf("%T", types.String("")),
+			fmt.Sprintf("%T", doVariables[types.DoURL]),
+		)
+	}
+
+	if doVariables[types.DoParams] != nil {
+		if _, ok := doVariables[types.DoParams].(types.Map); !ok {
+			return nil, NewTypeNotExpectedError(
+				types.DoParams,
+				fmt.Sprintf("%T", types.Map{}),
+				fmt.Sprintf("%T", doVariables[types.DoParams]),
+			)
+		}
+	}
+
+	if doVariables[types.DoQuery] != nil {
+		if _, ok := doVariables[types.DoQuery].(types.Map); !ok {
+			return nil, NewTypeNotExpectedError(
+				types.DoQuery,
+				fmt.Sprintf("%T", types.Map{}),
+				fmt.Sprintf("%T", doVariables[types.DoQuery]),
+			)
+		}
+	}
+
+	if doVariables[types.DoHeaders] != nil {
+		if _, ok := doVariables[types.DoHeaders].(types.Map); !ok {
+			return nil, NewTypeNotExpectedError(
+				types.DoHeaders,
+				fmt.Sprintf("%T", types.Map{}),
+				fmt.Sprintf("%T", doVariables[types.DoHeaders]),
+			)
+		}
 	}
 
 	p.variablesReplacer.Replace(doVariables, letVariables)
