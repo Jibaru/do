@@ -64,6 +64,10 @@ func (a *analyzer) Analyze(expressions types.SectionExpressions) (map[string]int
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
 
+		if _, ok := result[key]; ok {
+			return nil, NewRepeatedKeyError(key)
+		}
+
 		if isStringByQuotes(value) {
 			// if value is a string
 			result[key] = strings.Trim(value, `"`)
@@ -86,8 +90,8 @@ func (a *analyzer) Analyze(expressions types.SectionExpressions) (map[string]int
 			// if value is a number
 			result[key] = floatNum
 		} else {
-			// otherwise, value is a string
-			result[key] = value
+			// otherwise
+			return nil, NewInvalidValueError(value)
 		}
 	}
 

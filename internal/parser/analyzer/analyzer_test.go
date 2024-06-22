@@ -27,7 +27,6 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				"var6={\"key1\": 1, \"key2\": \"hello\"}",
 				"var7=`something here`",
 				"var8=\"=string=with=another=\"",
-				"var9=1.2.3",
 			},
 			expected: map[string]interface{}{
 				"var1": 1,
@@ -41,7 +40,6 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				},
 				"var7": "something here",
 				"var8": "=string=with=another=",
-				"var9": "1.2.3",
 			},
 		},
 		{
@@ -50,6 +48,21 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				"no equals",
 			},
 			expectedError: errors.New("error reading expression: [no equals]"),
+		},
+		{
+			name: "error repeated key",
+			expressions: types.SectionExpressions{
+				"var1=1",
+				"var1=2",
+			},
+			expectedError: errors.New("repeated key var1"),
+		},
+		{
+			name: "error invalid value",
+			expressions: types.SectionExpressions{
+				"var1=1.1.1",
+			},
+			expectedError: errors.New("invalid value 1.1.1"),
 		},
 	}
 
