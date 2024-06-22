@@ -3,7 +3,7 @@
 APP_NAME="do"
 VERSION="1.0.0"
 OUTPUT_DIR="bin"
-MAIN_FILE="./cmd/app/main.go"
+MAIN_FILE="./cmd/do/main.go"
 
 PLATFORMS=("windows/386" "windows/amd64" "linux/386" "linux/amd64" "darwin/amd64" "linux/arm")
 
