@@ -13,6 +13,8 @@ import (
 )
 
 func TestParser_FromFilename(t *testing.T) {
+	body := types.String("{\"extra\": 12, \"extra2\": false, \"extra3\": \"text\", \"extra4\": 12.33}")
+
 	testCases := []struct {
 		name          string
 		filename      string
@@ -37,10 +39,10 @@ func TestParser_FromFilename(t *testing.T) {
 				Do: types.Do{
 					Method:  types.String("GET"),
 					URL:     types.String("http://localhost:8080/api/todos/:id"),
-					Params:  types.Map{"id": "12"},
-					Query:   types.Map{"isOk": "false"},
-					Headers: types.Map{"Authorization": "Bearer text"},
-					Body:    utils.Ptr(types.String("{\"extra\": 12, \"extra2\": false, \"extra3\": \"text\", \"extra4\": 12.33}")),
+					Params:  types.Map{"id": types.String("12")},
+					Query:   types.Map{"isOk": types.String("false")},
+					Headers: types.Map{"Authorization": types.String("Bearer text")},
+					Body:    utils.Ptr(body),
 				},
 			},
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
@@ -60,9 +62,9 @@ func TestParser_FromFilename(t *testing.T) {
 					return map[string]interface{}{
 						"method":  types.String("GET"),
 						"url":     types.String("http://localhost:8080/api/todos/:id"),
-						"params":  types.Map{"id": "$id"},
-						"query":   types.Map{"isOk": "$isOk"},
-						"headers": types.Map{"Authorization": "Bearer $token"},
+						"params":  types.Map{"id": types.String("$id")},
+						"query":   types.Map{"isOk": types.String("$isOk")},
+						"headers": types.Map{"Authorization": types.String("Bearer $token")},
 						"body":    types.String("{\"extra\": $var1, \"extra2\": $var2, \"extra3\": \"$var3\", \"extra4\": $var4}"),
 					}, nil
 				}
@@ -70,10 +72,10 @@ func TestParser_FromFilename(t *testing.T) {
 				return nil, nil
 			},
 			ReplacerFn: func(doVariables map[string]interface{}, letVariables map[string]interface{}) {
-				doVariables["params"] = types.Map{"id": "12"}
-				doVariables["query"] = types.Map{"isOk": "false"}
-				doVariables["headers"] = types.Map{"Authorization": "Bearer text"}
-				doVariables["body"] = types.String("{\"extra\": 12, \"extra2\": false, \"extra3\": \"text\", \"extra4\": 12.33}")
+				doVariables["params"] = types.Map{"id": types.String("12")}
+				doVariables["query"] = types.Map{"isOk": types.String("false")}
+				doVariables["headers"] = types.Map{"Authorization": types.String("Bearer text")}
+				doVariables["body"] = body
 			},
 		},
 	}
@@ -92,12 +94,22 @@ func TestParser_FromFilename(t *testing.T) {
 
 			doFile, err := p.ParseFromFilename(tc.filename)
 
-			if err != nil && err.Error() != tc.expectedError.Error() {
+			if err != nil && tc.expectedError == nil {
+				t.Errorf("expected no error, got %v", err)
+			} else if err == nil && tc.expectedError != nil {
+				t.Errorf("expected error %v, got no error", tc.expectedError)
+			} else if err != nil && tc.expectedError != nil && err.Error() != tc.expectedError.Error() {
 				t.Errorf("expected error %v, got %v", tc.expectedError, err)
 			}
 
-			if doFile != nil && !reflect.DeepEqual(doFile, tc.expected) {
+			if doFile != nil && tc.expected == nil {
 				t.Errorf("expected %v, got %v", tc.expected, doFile)
+			} else if doFile == nil && tc.expected != nil {
+				t.Errorf("expected %v, got %v", tc.expected, doFile)
+			} else if doFile != nil && tc.expected != nil {
+				if !reflect.DeepEqual(doFile, tc.expected) {
+					t.Errorf("expected %v, got %v", tc.expected, doFile)
+				}
 			}
 		})
 	}

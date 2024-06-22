@@ -81,30 +81,33 @@ func (p *parser) ParseFromFilename(filename string) (*types.DoFile, error) {
 	}
 
 	if doVariables[types.DoParams] != nil {
-		if _, ok := doVariables[types.DoParams].(types.Map); !ok {
+		mp, ok := doVariables[types.DoParams].(types.Map)
+		if !ok || (mp != nil && !mp.HasBasicTypesValues()) {
 			return nil, NewTypeNotExpectedError(
 				types.DoParams,
-				fmt.Sprintf("%T", types.Map{}),
+				fmt.Sprintf("types.Map[string]basic types"),
 				fmt.Sprintf("%T", doVariables[types.DoParams]),
 			)
 		}
 	}
 
 	if doVariables[types.DoQuery] != nil {
-		if _, ok := doVariables[types.DoQuery].(types.Map); !ok {
+		mp, ok := doVariables[types.DoQuery].(types.Map)
+		if !ok || (mp != nil && !mp.HasBasicTypesValues()) {
 			return nil, NewTypeNotExpectedError(
 				types.DoQuery,
-				fmt.Sprintf("%T", types.Map{}),
+				fmt.Sprintf("types.Map[string]basic types"),
 				fmt.Sprintf("%T", doVariables[types.DoQuery]),
 			)
 		}
 	}
 
 	if doVariables[types.DoHeaders] != nil {
-		if _, ok := doVariables[types.DoHeaders].(types.Map); !ok {
+		mp, ok := doVariables[types.DoHeaders].(types.Map)
+		if !ok || (mp != nil && !mp.HasBasicTypesValues()) {
 			return nil, NewTypeNotExpectedError(
 				types.DoHeaders,
-				fmt.Sprintf("%T", types.Map{}),
+				fmt.Sprintf("types.Map[string]string"),
 				fmt.Sprintf("%T", doVariables[types.DoHeaders]),
 			)
 		}
