@@ -3,6 +3,8 @@ package replacer
 import (
 	"fmt"
 	"strings"
+
+	"github.com/jibaru/do/internal/types"
 )
 
 type Replacer interface {
@@ -28,6 +30,8 @@ func (v *replacer) replaceVariables(doVariables map[string]interface{}, letVaria
 		switch val := value.(type) {
 		case string:
 			doVariables[key] = v.replaceStringVariables(val, letVariables)
+		case types.String:
+			doVariables[key] = types.String(v.replaceStringVariables(string(val), letVariables))
 		case map[string]interface{}:
 			v.replaceVariables(val, letVariables)
 		}
@@ -36,7 +40,12 @@ func (v *replacer) replaceVariables(doVariables map[string]interface{}, letVaria
 
 func (v *replacer) replaceStringVariables(value string, letVariables map[string]interface{}) string {
 	for key, val := range letVariables {
-		value = strings.ReplaceAll(value, fmt.Sprintf("$%s", key), fmt.Sprintf("%v", val))
+		switch val := val.(type) {
+		case string:
+			value = strings.ReplaceAll(value, fmt.Sprintf("$%s", key), fmt.Sprintf("%v", val))
+		case types.String:
+			value = strings.ReplaceAll(value, fmt.Sprintf("$%s", key), fmt.Sprintf("%v", string(val)))
+		}
 	}
 	return value
 }

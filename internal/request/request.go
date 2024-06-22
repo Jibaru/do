@@ -25,13 +25,13 @@ func NewHttpClient(client *http.Client) HttpClient {
 
 func (h *httpClient) Do(doFile types.DoFile) (*types.Response, error) {
 	// Replace params
-	url := doFile.Do.URL
+	url := string(doFile.Do.URL)
 	for key, value := range doFile.Do.Params {
 		placeholder := fmt.Sprintf(":%s", key)
 		url = strings.Replace(url, placeholder, fmt.Sprintf("%v", value), -1)
 	}
 
-	req, err := http.NewRequest(doFile.Do.Method, url, nil)
+	req, err := http.NewRequest(string(doFile.Do.Method), url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,8 @@ func (h *httpClient) Do(doFile types.DoFile) (*types.Response, error) {
 	req.URL.RawQuery = query.Encode()
 
 	if doFile.Do.Body != nil {
-		req.Body = io.NopCloser(strings.NewReader(*doFile.Do.Body))
+		body := string(*doFile.Do.Body)
+		req.Body = io.NopCloser(strings.NewReader(body))
 	}
 
 	res, err := h.client.Do(req)

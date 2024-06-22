@@ -26,12 +26,12 @@ type Let struct {
 
 // Do defines the request section
 type Do struct {
-	Method  string                 `json:"method"`
-	URL     string                 `json:"url"`
-	Params  map[string]interface{} `json:"params"`
-	Query   map[string]interface{} `json:"query"`
-	Headers map[string]interface{} `json:"headers"`
-	Body    *string                `json:"body"`
+	Method  String  `json:"method"`
+	URL     String  `json:"url"`
+	Params  Map     `json:"params"`
+	Query   Map     `json:"query"`
+	Headers Map     `json:"headers"`
+	Body    *String `json:"body"`
 }
 
 // DoFile is the representation of file.do

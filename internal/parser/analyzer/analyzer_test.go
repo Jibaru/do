@@ -29,17 +29,17 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				"var8=\"=string=with=another=\"",
 			},
 			expected: map[string]interface{}{
-				"var1": 1,
-				"var2": "hello",
-				"var3": true,
-				"var4": 20.3,
-				"var5": -12,
-				"var6": map[string]interface{}{
+				"var1": types.Int(1),
+				"var2": types.String("hello"),
+				"var3": types.Bool(true),
+				"var4": types.Float(20.3),
+				"var5": types.Int(-12),
+				"var6": types.Map{
 					"key1": float64(1),
 					"key2": "hello",
 				},
-				"var7": "something here",
-				"var8": "=string=with=another=",
+				"var7": types.String("something here"),
+				"var8": types.String("=string=with=another="),
 			},
 		},
 		{

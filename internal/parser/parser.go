@@ -2,6 +2,7 @@ package parser
 
 import (
 	"errors"
+
 	"github.com/jibaru/do/internal/parser/extractor"
 	"github.com/jibaru/do/internal/parser/replacer"
 	"github.com/jibaru/do/internal/reader"
@@ -69,25 +70,25 @@ func (p *parser) ParseFromFilename(filename string) (*types.DoFile, error) {
 			Variables: letVariables,
 		},
 		Do: types.Do{
-			Method: doVariables[types.DoMethod].(string),
-			URL:    doVariables[types.DoURL].(string),
+			Method: doVariables[types.DoMethod].(types.String),
+			URL:    doVariables[types.DoURL].(types.String),
 		},
 	}
 
 	if mp, ok := doVariables[types.DoParams]; ok {
-		doFile.Do.Params = mp.(map[string]interface{})
+		doFile.Do.Params = mp.(types.Map)
 	}
 
 	if mp, ok := doVariables[types.DoQuery]; ok {
-		doFile.Do.Query = mp.(map[string]interface{})
+		doFile.Do.Query = mp.(types.Map)
 	}
 
 	if mp, ok := doVariables[types.DoHeaders]; ok {
-		doFile.Do.Headers = mp.(map[string]interface{})
+		doFile.Do.Headers = mp.(types.Map)
 	}
 
 	if mp, ok := doVariables[types.DoBody]; ok {
-		body := mp.(string)
+		body := mp.(types.String)
 		if body != "" {
 			doFile.Do.Body = &body
 		}

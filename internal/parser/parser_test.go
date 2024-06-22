@@ -28,19 +28,19 @@ func TestParser_FromFilename(t *testing.T) {
 			expected: &types.DoFile{
 				Let: types.Let{
 					Variables: map[string]interface{}{
-						"var1": 12,
-						"var2": "text",
-						"var3": false,
-						"var4": 12.33,
+						"var1": types.Int(12),
+						"var2": types.String("text"),
+						"var3": types.Bool(false),
+						"var4": types.Float(12.33),
 					},
 				},
 				Do: types.Do{
-					Method:  "GET",
-					URL:     "http://localhost:8080/api/todos/:id",
-					Params:  map[string]interface{}{"id": "12"},
-					Query:   map[string]interface{}{"isOk": "false"},
-					Headers: map[string]interface{}{"Authorization": "Bearer text"},
-					Body:    utils.Ptr("{\"extra\": 12, \"extra2\": false, \"extra3\": \"text\", \"extra4\": 12.33}"),
+					Method:  types.String("GET"),
+					URL:     types.String("http://localhost:8080/api/todos/:id"),
+					Params:  types.Map{"id": "12"},
+					Query:   types.Map{"isOk": "false"},
+					Headers: types.Map{"Authorization": "Bearer text"},
+					Body:    utils.Ptr(types.String("{\"extra\": 12, \"extra2\": false, \"extra3\": \"text\", \"extra4\": 12.33}")),
 				},
 			},
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
@@ -49,31 +49,31 @@ func TestParser_FromFilename(t *testing.T) {
 			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
 				if section == types.LetSection {
 					return map[string]interface{}{
-						"var1": 12,
-						"var2": "text",
-						"var3": false,
-						"var4": 12.33,
+						"var1": types.Int(12),
+						"var2": types.String("text"),
+						"var3": types.Bool(false),
+						"var4": types.Float(12.33),
 					}, nil
 				}
 
 				if section == types.DoSection {
 					return map[string]interface{}{
-						"method":  "GET",
-						"url":     "http://localhost:8080/api/todos/:id",
-						"params":  map[string]interface{}{"id": "$id"},
-						"query":   map[string]interface{}{"isOk": "$isOk"},
-						"headers": map[string]interface{}{"Authorization": "Bearer $token"},
-						"body":    "{\"extra\": $var1, \"extra2\": $var2, \"extra3\": \"$var3\", \"extra4\": $var4}",
+						"method":  types.String("GET"),
+						"url":     types.String("http://localhost:8080/api/todos/:id"),
+						"params":  types.Map{"id": "$id"},
+						"query":   types.Map{"isOk": "$isOk"},
+						"headers": types.Map{"Authorization": "Bearer $token"},
+						"body":    types.String("{\"extra\": $var1, \"extra2\": $var2, \"extra3\": \"$var3\", \"extra4\": $var4}"),
 					}, nil
 				}
 
 				return nil, nil
 			},
 			ReplacerFn: func(doVariables map[string]interface{}, letVariables map[string]interface{}) {
-				doVariables["params"] = map[string]interface{}{"id": "12"}
-				doVariables["query"] = map[string]interface{}{"isOk": "false"}
-				doVariables["headers"] = map[string]interface{}{"Authorization": "Bearer text"}
-				doVariables["body"] = "{\"extra\": 12, \"extra2\": false, \"extra3\": \"text\", \"extra4\": 12.33}"
+				doVariables["params"] = types.Map{"id": "12"}
+				doVariables["query"] = types.Map{"isOk": "false"}
+				doVariables["headers"] = types.Map{"Authorization": "Bearer text"}
+				doVariables["body"] = types.String("{\"extra\": 12, \"extra2\": false, \"extra3\": \"text\", \"extra4\": 12.33}")
 			},
 		},
 	}

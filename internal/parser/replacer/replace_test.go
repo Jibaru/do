@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/jibaru/do/internal/parser/replacer"
+	"github.com/jibaru/do/internal/types"
 )
 
 func TestVariablesReplacer_Replace(t *testing.T) {
@@ -16,99 +17,99 @@ func TestVariablesReplacer_Replace(t *testing.T) {
 		{
 			name: "success",
 			doVariables: map[string]interface{}{
-				"method": "GET",
-				"url":    "http://localhost:8080/api/todos/:id",
-				"params": map[string]interface{}{"id": "$id"},
-				"query":  map[string]interface{}{"ok": "$isOk"},
-				"headers": map[string]interface{}{
+				"method": types.String("GET"),
+				"url":    types.String("http://localhost:8080/api/todos/:id"),
+				"params": types.Map{"id": "$id"},
+				"query":  types.Map{"ok": "$isOk"},
+				"headers": types.Map{
 					"Authorization": "Bearer $token",
 					"Content-Type":  "application/json",
 				},
-				"body": `{"extra": $extra}`,
+				"body": types.String(`{"extra": $extra}`),
 			},
 			letVariables: map[string]interface{}{
-				"id":    "123",
-				"isOk":  true,
-				"token": "random123",
-				"extra": 902,
+				"id":    types.String("123"),
+				"isOk":  types.Bool(true),
+				"token": types.String("random123"),
+				"extra": types.Int(902),
 			},
 			expected: map[string]interface{}{
-				"method": "GET",
-				"url":    "http://localhost:8080/api/todos/:id",
-				"params": map[string]interface{}{"id": "123"},
-				"query":  map[string]interface{}{"ok": "true"},
-				"headers": map[string]interface{}{
+				"method": types.String("GET"),
+				"url":    types.String("http://localhost:8080/api/todos/:id"),
+				"params": types.Map{"id": "123"},
+				"query":  types.Map{"ok": "true"},
+				"headers": types.Map{
 					"Authorization": "Bearer random123",
 					"Content-Type":  "application/json",
 				},
-				"body": `{"extra": 902}`,
+				"body": types.String(`{"extra": 902}`),
 			},
 		},
 		{
 			name: "success no let variables",
 			doVariables: map[string]interface{}{
-				"method": "GET",
-				"url":    "http://localhost:8080/api/todos/:id",
-				"params": map[string]interface{}{"id": "$id"},
-				"query":  map[string]interface{}{"ok": "$isOk"},
-				"headers": map[string]interface{}{
+				"method": types.String("GET"),
+				"url":    types.String("http://localhost:8080/api/todos/:id"),
+				"params": types.Map{"id": "$id"},
+				"query":  types.Map{"ok": "$isOk"},
+				"headers": types.Map{
 					"Authorization": "Bearer $token",
 					"Content-Type":  "application/json",
 				},
-				"body": `{"extra": $extra}`,
+				"body": types.String(`{"extra": $extra}`),
 			},
 			letVariables: nil,
 			expected: map[string]interface{}{
-				"method": "GET",
-				"url":    "http://localhost:8080/api/todos/:id",
-				"params": map[string]interface{}{"id": "$id"},
-				"query":  map[string]interface{}{"ok": "$isOk"},
-				"headers": map[string]interface{}{
+				"method": types.String("GET"),
+				"url":    types.String("http://localhost:8080/api/todos/:id"),
+				"params": types.Map{"id": "$id"},
+				"query":  types.Map{"ok": "$isOk"},
+				"headers": types.Map{
 					"Authorization": "Bearer $token",
 					"Content-Type":  "application/json",
 				},
-				"body": `{"extra": $extra}`,
+				"body": types.String(`{"extra": $extra}`),
 			},
 		},
 		{
 			name:        "success no do variables",
 			doVariables: nil,
 			letVariables: map[string]interface{}{
-				"id":    "123",
-				"isOk":  true,
-				"token": "random123",
+				"id":    types.String("123"),
+				"isOk":  types.Bool(true),
+				"token": types.String("random123"),
 			},
 			expected: nil,
 		},
 		{
 			name: "success no needs replacements",
 			doVariables: map[string]interface{}{
-				"method": "GET",
-				"url":    "http://localhost:8080/api/todos/:id",
-				"params": map[string]interface{}{"id": "123"},
-				"query":  map[string]interface{}{"ok": "true"},
-				"headers": map[string]interface{}{
+				"method": types.String("GET"),
+				"url":    types.String("http://localhost:8080/api/todos/:id"),
+				"params": types.Map{"id": "123"},
+				"query":  types.Map{"ok": "true"},
+				"headers": types.Map{
 					"Authorization": "Bearer random123",
 					"Content-Type":  "application/json",
 				},
-				"body": `{"extra": 902}`,
+				"body": types.String(`{"extra": 902}`),
 			},
 			letVariables: map[string]interface{}{
-				"id":    "123",
-				"isOk":  true,
-				"token": "random123",
-				"extra": 902,
+				"id":    types.String("123"),
+				"isOk":  types.Bool(true),
+				"token": types.String("random123"),
+				"extra": types.Int(902),
 			},
 			expected: map[string]interface{}{
-				"method": "GET",
-				"url":    "http://localhost:8080/api/todos/:id",
-				"params": map[string]interface{}{"id": "123"},
-				"query":  map[string]interface{}{"ok": "true"},
-				"headers": map[string]interface{}{
+				"method": types.String("GET"),
+				"url":    types.String("http://localhost:8080/api/todos/:id"),
+				"params": types.Map{"id": "123"},
+				"query":  types.Map{"ok": "true"},
+				"headers": types.Map{
 					"Authorization": "Bearer random123",
 					"Content-Type":  "application/json",
 				},
-				"body": `{"extra": 902}`,
+				"body": types.String(`{"extra": 902}`),
 			},
 		},
 	}
