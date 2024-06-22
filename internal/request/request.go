@@ -28,7 +28,14 @@ func (h *httpClient) Do(doFile types.DoFile) (*types.Response, error) {
 	url := string(doFile.Do.URL)
 	for key, value := range doFile.Do.Params {
 		placeholder := fmt.Sprintf(":%s", key)
-		url = strings.Replace(url, placeholder, fmt.Sprintf("%v", value), -1)
+		beforeReplaceUrl := url
+		afterReplaceUrl := strings.Replace(url, placeholder, fmt.Sprintf("%v", value), -1)
+
+		if beforeReplaceUrl == afterReplaceUrl {
+			return nil, NewCanNotReplaceParamError(key)
+		}
+
+		url = afterReplaceUrl
 	}
 
 	req, err := http.NewRequest(string(doFile.Do.Method), url, nil)
