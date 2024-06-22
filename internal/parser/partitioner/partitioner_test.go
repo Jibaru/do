@@ -30,9 +30,9 @@ func TestPartitioner_Split(t *testing.T) {
 			},
 		},
 		{
-			name:          "error empty part found",
+			name:          "error empty part",
 			content:       "var1=2;;",
-			expectedError: errors.New("empty part found"),
+			expectedError: errors.New("empty part"),
 		},
 	}
 

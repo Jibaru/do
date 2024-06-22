@@ -1,11 +1,11 @@
 package partitioner
 
-type EmptyPartFound struct{}
+type EmptyPartError struct{}
 
 func NewEmptyPartFound() error {
-	return EmptyPartFound{}
+	return EmptyPartError{}
 }
 
-func (e EmptyPartFound) Error() string {
-	return "empty part found"
+func (e EmptyPartError) Error() string {
+	return "empty part"
 }
