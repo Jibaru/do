@@ -24,9 +24,10 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				"var3=true",
 				"var4=20.3",
 				"var5=-12",
-				"var6={\"key1\": 1, \"key2\": \"hello\"}",
+				"var6={\"key1\": 1, \"key2\": \"hello\", \"key3\": {\"a\": x}}",
 				"var7=`something here`",
 				"var8=\"=string=with=another=\"",
+				"var9=x",
 			},
 			expected: map[string]interface{}{
 				"var1": types.Int(1),
@@ -35,11 +36,15 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				"var4": types.Float(20.3),
 				"var5": types.Int(-12),
 				"var6": types.Map{
-					"key1": float64(1),
-					"key2": "hello",
+					"key1": types.Int(1),
+					"key2": types.String("hello"),
+					"key3": types.Map{
+						"a": types.ReferenceToVariable{Value: "x"},
+					},
 				},
 				"var7": types.String("something here"),
 				"var8": types.String("=string=with=another="),
+				"var9": types.ReferenceToVariable{Value: "x"},
 			},
 		},
 		{

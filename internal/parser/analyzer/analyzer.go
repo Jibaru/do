@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"encoding/json"
 	"strconv"
 	"strings"
 	"unicode"
@@ -46,10 +45,12 @@ func (a *analyzer) Analyze(expressions types.SectionExpressions) (map[string]int
 			// if value is a string
 			result[key] = types.String(strings.Trim(value, "`"))
 		} else if isMap(value) {
-			// if value is a JSON object
-			var obj map[string]interface{}
-			_ = json.Unmarshal([]byte(value), &obj)
-			result[key] = types.Map(obj)
+			// if value is a map
+			mp, err := toMap(value)
+			if err != nil {
+				return nil, err
+			}
+			result[key] = mp
 		} else if isBool(value) {
 			// if value is a boolean
 			b, _ := strconv.ParseBool(value)
@@ -105,21 +106,63 @@ func isFloat(value string) (float64, bool) {
 	return 0, false
 }
 
+func toMap(value string) (types.Map, error) {
+	value = strings.TrimSpace(value[1 : len(value)-1]) // Remove the curly braces
+	parts := strings.Split(value, ",")
+	result := make(map[string]interface{})
+
+	for _, part := range parts {
+		pair := strings.SplitN(part, ":", 2)
+		if len(pair) != 2 {
+			return nil, NewInvalidValueError(part)
+		}
+
+		key := strings.TrimSpace(pair[0])
+		key = strings.Trim(key, `"`)
+		val := strings.TrimSpace(pair[1])
+
+		if types.IsReservedKeyword(key) {
+			return nil, NewReservedKeywordError(key)
+		}
+
+		if isStringByQuotes(val) {
+			result[key] = types.String(strings.Trim(val, `"`))
+		} else if isStringByBackticks(val) {
+			result[key] = types.String(strings.Trim(val, "`"))
+		} else if isMap(val) {
+			obj, err := toMap(val)
+			if err != nil {
+				return nil, err
+			}
+			result[key] = obj
+		} else if isBool(val) {
+			b, _ := strconv.ParseBool(val)
+			result[key] = types.Bool(b)
+		} else if num, ok := isInt(val); ok {
+			result[key] = types.Int(num)
+		} else if floatNum, isOk := isFloat(val); isOk {
+			result[key] = types.Float(floatNum)
+		} else if isReferenceToVariable(val) {
+			result[key] = types.NewReferenceToVariable(val)
+		} else {
+			return nil, NewInvalidValueError(val)
+		}
+	}
+
+	return types.Map(result), nil
+}
+
 func isReferenceToVariable(value string) bool {
 	if value == "" {
 		return false
 	}
 
-	if !unicode.IsLetter(rune(value[0])) {
-		return false
-	}
-
-	for _, char := range value {
-		if !unicode.IsLetter(char) {
+	for i, char := range value {
+		if i == 0 && unicode.IsDigit(char) {
 			return false
 		}
 
-		if !unicode.IsDigit(char) {
+		if !(unicode.IsLetter(char) || unicode.IsDigit(char) || char == '_') {
 			return false
 		}
 	}
