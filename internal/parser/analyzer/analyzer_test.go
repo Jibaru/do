@@ -27,6 +27,7 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				"var6={\"key1\": 1, \"key2\": \"hello\"}",
 				"var7=`something here`",
 				"var8=\"=string=with=another=\"",
+				"var9=1.2.3",
 			},
 			expected: map[string]interface{}{
 				"var1": 1,
@@ -40,6 +41,7 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				},
 				"var7": "something here",
 				"var8": "=string=with=another=",
+				"var9": "1.2.3",
 			},
 		},
 		{
