@@ -50,6 +50,13 @@ func TestAnalyzer_Analyze(t *testing.T) {
 			expectedError: errors.New("error reading expression: [no equals]"),
 		},
 		{
+			name: "error reserved keyword",
+			expressions: types.SectionExpressions{
+				"let=1",
+			},
+			expectedError: errors.New("reserved keyword let"),
+		},
+		{
 			name: "error repeated key",
 			expressions: types.SectionExpressions{
 				"var1=1",

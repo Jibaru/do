@@ -31,6 +31,10 @@ func (a *analyzer) Analyze(expressions types.SectionExpressions) (map[string]int
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
 
+		if types.IsReservedKeyword(key) {
+			return nil, NewReservedKeywordError(key)
+		}
+
 		if _, ok := result[key]; ok {
 			return nil, NewRepeatedKeyError(key)
 		}
