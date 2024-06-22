@@ -1,6 +1,7 @@
 package partitioner_test
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
@@ -10,9 +11,10 @@ import (
 
 func TestPartitioner_Split(t *testing.T) {
 	testCases := []struct {
-		name     string
-		content  types.NormalizedSectionContent
-		expected types.SectionExpressions
+		name          string
+		content       types.NormalizedSectionContent
+		expected      types.SectionExpressions
+		expectedError error
 	}{
 		{
 			name:    "success",
@@ -27,6 +29,11 @@ func TestPartitioner_Split(t *testing.T) {
 				"var7={\"key1\": 1, \"key2\": \"hello\"}",
 			},
 		},
+		{
+			name:          "error empty part found",
+			content:       "var1=2;;",
+			expectedError: errors.New("empty part found"),
+		},
 	}
 
 	thePartitioner := partitioner.New()
@@ -35,8 +42,12 @@ func TestPartitioner_Split(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			result, err := thePartitioner.Split(tc.content)
 
-			if err != nil {
+			if err != nil && tc.expectedError == nil {
 				t.Errorf("expected no error, got %v", err)
+			} else if err == nil && tc.expectedError != nil {
+				t.Errorf("expected error %v, got no error", tc.expectedError)
+			} else if err != nil && tc.expectedError != nil && err.Error() != tc.expectedError.Error() {
+				t.Errorf("expected error %v, got %v", tc.expectedError, err)
 			}
 
 			if !reflect.DeepEqual(result, tc.expected) {

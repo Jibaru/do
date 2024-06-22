@@ -30,8 +30,8 @@ func (p *partitioner) Split(content types.NormalizedSectionContent) (types.Secti
 			part := currentPart.String()
 			currentPart.Reset()
 
-			if part == ";" {
-				continue
+			if strings.TrimSpace(part) == "" {
+				return nil, NewEmptyPartFound()
 			}
 
 			parts = append(parts, part)
