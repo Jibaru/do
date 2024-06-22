@@ -18,6 +18,28 @@ func New() Replacer {
 }
 
 func (v *replacer) Replace(doVariables map[string]interface{}, letVariables map[string]interface{}) {
+	variablesWithoutReferences := make(map[string]interface{})
+
+	for key, value := range letVariables {
+		switch val := value.(type) {
+		case types.ReferenceToVariable:
+			continue
+		default:
+			variablesWithoutReferences[key] = val
+		}
+	}
+
+	for key, value := range letVariables {
+		switch val := value.(type) {
+		case types.ReferenceToVariable:
+			if _, ok := variablesWithoutReferences[val.Value]; !ok {
+				// TODO: raise error variable not found
+				continue
+			}
+			letVariables[key] = variablesWithoutReferences[val.Value]
+		}
+	}
+
 	v.replaceVariables(doVariables, letVariables)
 }
 
@@ -28,24 +50,31 @@ func (v *replacer) replaceVariables(doVariables map[string]interface{}, letVaria
 
 	for key, value := range doVariables {
 		switch val := value.(type) {
-		case string:
-			doVariables[key] = v.replaceStringVariables(val, letVariables)
 		case types.String:
-			doVariables[key] = types.String(v.replaceStringVariables(string(val), letVariables))
-		case map[string]interface{}:
+			doVariables[key] = v.replaceStringVariables(val, letVariables)
+		case types.ReferenceToVariable:
+			if _, ok := letVariables[val.Value]; !ok {
+				// TODO: raise error variable not found
+				continue
+			}
+			doVariables[key] = letVariables[val.Value]
+		case types.Map:
 			v.replaceVariables(val, letVariables)
 		}
 	}
 }
 
-func (v *replacer) replaceStringVariables(value string, letVariables map[string]interface{}) string {
+func (v *replacer) replaceStringVariables(value types.String, letVariables map[string]interface{}) types.String {
 	for key, val := range letVariables {
-		switch val := val.(type) {
-		case string:
-			value = strings.ReplaceAll(value, fmt.Sprintf("$%s", key), fmt.Sprintf("%v", val))
-		case types.String:
-			value = strings.ReplaceAll(value, fmt.Sprintf("$%s", key), fmt.Sprintf("%v", string(val)))
-		}
+		stringVal := fmt.Sprintf("%v", val)
+
+		value = types.String(
+			strings.ReplaceAll(
+				string(value),
+				fmt.Sprintf("$%s", key),
+				fmt.Sprintf("%v", stringVal),
+			),
+		)
 	}
 	return value
 }
