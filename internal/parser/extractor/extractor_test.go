@@ -107,7 +107,7 @@ func TestExtractor_Extract(t *testing.T) {
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}`,
 			expectedError: errors.New("no block found"),
 			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
-				return "", nil
+				return "", taker.NoBlockError{}
 			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return "", nil
@@ -125,7 +125,7 @@ func TestExtractor_Extract(t *testing.T) {
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}do`,
 			expectedError: errors.New("missing opening brace"),
 			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
-				return "", nil
+				return "", errors.New("missing opening brace")
 			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
 				return "", nil
@@ -138,10 +138,46 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
-			name:          "error missing closing brace",
+			name:          "error no do block normalizer empty content",
 			section:       types.DoSection,
-			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}do{method="GET";url="https://localhost:8080/api/v1/tests"`,
-			expectedError: errors.New("missing closing brace"),
+			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}`,
+			expectedError: errors.New("no block found"),
+			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+				return "", nil
+			},
+			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
+				return "", normalizer.EmptyContentError{}
+			},
+			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
+				return nil, nil
+			},
+			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
+				return nil, nil
+			},
+		},
+		{
+			name:          "error in normalizer",
+			section:       types.DoSection,
+			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}`,
+			expectedError: errors.New("error in normalizer"),
+			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+				return "", nil
+			},
+			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
+				return "", errors.New("error in normalizer")
+			},
+			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
+				return nil, nil
+			},
+			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
+				return nil, nil
+			},
+		},
+		{
+			name:          "error in splitter",
+			section:       types.DoSection,
+			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}`,
+			expectedError: errors.New("error in splitter"),
 			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
 				return "", nil
 			},
@@ -149,150 +185,10 @@ func TestExtractor_Extract(t *testing.T) {
 				return "", nil
 			},
 			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
-				return nil, nil
+				return nil, errors.New("error in splitter")
 			},
 			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
 				return nil, nil
-			},
-		},
-		{
-			name:       "success let in string",
-			section:    types.LetSection,
-			rawContent: `let{var1=12;var2="let";var3=false;var4=12.33;}do{method="GET";url="https://localhost:8080/api/v1/tests";body={};}`,
-			expected: map[string]interface{}{
-				"var1": 12,
-				"var2": "let",
-				"var3": false,
-				"var4": 12.33,
-			},
-			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
-				return "var1=12;var2=\"let\";var3=false;var4=12.33;", nil
-			},
-			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
-				return `var1=12;var2="let";var3=false;var4=12.33;`, nil
-			},
-			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
-				return types.SectionExpressions{
-					"var1=12",
-					"var2=\"let\"",
-					"var3=false",
-					"var4=12.33",
-				}, nil
-			},
-			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
-				return map[string]interface{}{
-					"var1": 12,
-					"var2": "let",
-					"var3": false,
-					"var4": 12.33,
-				}, nil
-			},
-		},
-		{
-			name:       "success do in string",
-			section:    types.DoSection,
-			rawContent: `let{var1=12;var2="text";var3=false;var4=12.33;}do{method="GET";url="https://dolocalhost:8080/api/v1/tests";}`,
-			expected: map[string]interface{}{
-				"method": "GET",
-				"url":    "https://dolocalhost:8080/api/v1/tests",
-			},
-			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
-				return "method=\"GET\";url=\"https://dolocalhost:8080/api/v1/tests\";", nil
-			},
-			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
-				return `method="GET";url="https://dolocalhost:8080/api/v1/tests";`, nil
-			},
-			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
-				return types.SectionExpressions{
-					"method=\"GET\"",
-					"url=\"https://dolocalhost:8080/api/v1/tests\"",
-				}, nil
-			},
-			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
-				return map[string]interface{}{
-					"method": "GET",
-					"url":    "https://dolocalhost:8080/api/v1/tests",
-				}, nil
-			},
-		},
-		{
-			name:          "error parsing JSON",
-			section:       types.DoSection,
-			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}do{method="GET";url="https://localhost:8080/api/v1/tests";body={};}`,
-			expectedError: errors.New("error parsing JSON value"),
-			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
-				return "method=\"GET\";url=\"https://localhost:8080/api/v1/tests\";body={};", nil
-			},
-			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
-				return `method="GET";url="https://localhost:8080/api/v1/tests";body={};`, nil
-			},
-			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
-				return types.SectionExpressions{
-					"method=\"GET\"",
-					"url=\"https://localhost:8080/api/v1/tests\"",
-					"body={}",
-				}, nil
-			},
-			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
-				return nil, nil
-			},
-		},
-		{
-			name:          "error parsing boolean value",
-			section:       types.DoSection,
-			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}do{method="GET";url="https://localhost:8080/api/v1/tests";body={};}`,
-			expectedError: errors.New("error parsing boolean value"),
-			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
-				return "method=\"GET\";url=\"https://localhost:8080/api/v1/tests\";body={};", nil
-			},
-			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
-				return `method="GET";url="https://localhost:8080/api/v1/tests";body={};`, nil
-			},
-			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
-				return types.SectionExpressions{
-					"method=\"GET\"",
-					"url=\"https://localhost:8080/api/v1/tests\"",
-					"body={}",
-				}, nil
-			},
-			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
-				return nil, nil
-			},
-		},
-		{
-			name:       "success let section with multiple ; and {}",
-			section:    types.LetSection,
-			rawContent: "let{var1=12;var2=\"tex;;;t\";var3=false;var4=12.33;var5=\"{;\";}do{method=\"GET\";}",
-			expected: map[string]interface{}{
-				"var1": 12,
-				"var2": "tex;;;t",
-				"var3": false,
-				"var4": 12.33,
-				"var5": "{;",
-			},
-			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
-				return "var1=12;var2=\"tex;;;t\";var3=false;var4=12.33;var5=\"{;\";", nil
-			},
-			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
-				return `var1=12;var2="tex;;;t";var3=false;var4=12.33;var5="{;";`, nil
-			},
-			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
-				return types.SectionExpressions{
-					"var1=12",
-					"var2=\"tex;;;t\"",
-					"var3=false",
-					"var4=12.33",
-					"var5=\"{;\"",
-				}, nil
-			},
-			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
-				return map[string]interface{}{
-					"var1": 12,
-					"var2": "tex;;;t",
-					"var3": false,
-					"var4": 12.33,
-					"var5": "{;",
-				}, nil
 			},
 		},
 	}
