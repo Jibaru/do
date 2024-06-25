@@ -22,7 +22,7 @@ func TestParser_FromFilename(t *testing.T) {
 		expectedError error
 		FileReaderFn  func(filename string) (types.FileReaderContent, error)
 		ExtractorFn   func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error)
-		ReplacerFn    func(doVariables map[string]interface{}, letVariables map[string]interface{})
+		ReplacerFn    func(doVariables map[string]interface{}, letVariables map[string]interface{}) error
 	}{
 		{
 			name:     "success",
@@ -71,11 +71,12 @@ func TestParser_FromFilename(t *testing.T) {
 
 				return nil, nil
 			},
-			ReplacerFn: func(doVariables map[string]interface{}, letVariables map[string]interface{}) {
+			ReplacerFn: func(doVariables map[string]interface{}, letVariables map[string]interface{}) error {
 				doVariables["params"] = types.Map{"id": types.String("12")}
 				doVariables["query"] = types.Map{"isOk": types.String("false")}
 				doVariables["headers"] = types.Map{"Authorization": types.String("Bearer text")}
 				doVariables["body"] = body
+				return nil
 			},
 		},
 	}

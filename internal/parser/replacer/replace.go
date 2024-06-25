@@ -8,7 +8,7 @@ import (
 )
 
 type Replacer interface {
-	Replace(doVariables map[string]interface{}, letVariables map[string]interface{})
+	Replace(doVariables map[string]interface{}, letVariables map[string]interface{}) error
 }
 
 type replacer struct{}
@@ -17,7 +17,16 @@ func New() Replacer {
 	return &replacer{}
 }
 
-func (v *replacer) Replace(doVariables map[string]interface{}, letVariables map[string]interface{}) {
+func (v *replacer) Replace(doVariables map[string]interface{}, letVariables map[string]interface{}) error {
+	err := v.replaceVariablesInLetSection(letVariables)
+	if err != nil {
+		return err
+	}
+
+	return v.replaceVariablesInDoSection(doVariables, letVariables)
+}
+
+func (v *replacer) replaceVariablesInLetSection(letVariables map[string]interface{}) error {
 	variablesWithoutReferences := make(map[string]interface{})
 
 	for key, value := range letVariables {
@@ -33,19 +42,18 @@ func (v *replacer) Replace(doVariables map[string]interface{}, letVariables map[
 		switch val := value.(type) {
 		case types.ReferenceToVariable:
 			if _, ok := variablesWithoutReferences[val.Value]; !ok {
-				// TODO: raise error variable not found
-				continue
+				return NewReferenceToVariableNotFoundError(key, val.Value)
 			}
 			letVariables[key] = variablesWithoutReferences[val.Value]
 		}
 	}
 
-	v.replaceVariables(doVariables, letVariables)
+	return nil
 }
 
-func (v *replacer) replaceVariables(doVariables map[string]interface{}, letVariables map[string]interface{}) {
+func (v *replacer) replaceVariablesInDoSection(doVariables map[string]interface{}, letVariables map[string]interface{}) error {
 	if letVariables == nil {
-		return
+		return nil
 	}
 
 	for key, value := range doVariables {
@@ -54,14 +62,18 @@ func (v *replacer) replaceVariables(doVariables map[string]interface{}, letVaria
 			doVariables[key] = v.replaceStringVariables(val, letVariables)
 		case types.ReferenceToVariable:
 			if _, ok := letVariables[val.Value]; !ok {
-				// TODO: raise error variable not found
-				continue
+				return NewReferenceToVariableNotFoundError(key, val.Value)
 			}
 			doVariables[key] = letVariables[val.Value]
 		case types.Map:
-			v.replaceVariables(val, letVariables)
+			err := v.replaceVariablesInDoSection(val, letVariables)
+			if err != nil {
+				return err
+			}
 		}
 	}
+
+	return nil
 }
 
 func (v *replacer) replaceStringVariables(value types.String, letVariables map[string]interface{}) types.String {

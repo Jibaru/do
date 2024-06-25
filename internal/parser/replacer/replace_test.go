@@ -1,6 +1,7 @@
 package replacer_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/jibaru/do/internal/parser/replacer"
@@ -9,10 +10,11 @@ import (
 
 func TestVariablesReplacer_Replace(t *testing.T) {
 	testCases := []struct {
-		name         string
-		doVariables  map[string]interface{}
-		letVariables map[string]interface{}
-		expected     map[string]interface{}
+		name          string
+		doVariables   map[string]interface{}
+		letVariables  map[string]interface{}
+		expected      map[string]interface{}
+		expectedError error
 	}{
 		{
 			name: "success",
@@ -24,6 +26,7 @@ func TestVariablesReplacer_Replace(t *testing.T) {
 				"headers": types.Map{
 					"Authorization": "Bearer $token",
 					"Content-Type":  "application/json",
+					"Extra":         types.NewReferenceToVariable("extra"),
 				},
 				"body": types.String(`{"extra": $extra}`),
 			},
@@ -32,6 +35,7 @@ func TestVariablesReplacer_Replace(t *testing.T) {
 				"isOk":  types.Bool(true),
 				"token": types.String("random123"),
 				"extra": types.Int(902),
+				"other": types.NewReferenceToVariable("extra"),
 			},
 			expected: map[string]interface{}{
 				"method": types.String("GET"),
@@ -41,6 +45,7 @@ func TestVariablesReplacer_Replace(t *testing.T) {
 				"headers": types.Map{
 					"Authorization": "Bearer random123",
 					"Content-Type":  "application/json",
+					"Extra":         types.Int(902),
 				},
 				"body": types.String(`{"extra": 902}`),
 			},
@@ -112,13 +117,52 @@ func TestVariablesReplacer_Replace(t *testing.T) {
 				"body": types.String(`{"extra": 902}`),
 			},
 		},
+		{
+			name: "error reference to variable not found in let section",
+			letVariables: map[string]interface{}{
+				"var1": types.String("123"),
+				"var2": types.NewReferenceToVariable("var3"),
+			},
+			doVariables:   map[string]interface{}{},
+			expectedError: errors.New("reference to variable for key var2 not found: var3"),
+		},
+		{
+			name: "error reference to variable not found in do section",
+			letVariables: map[string]interface{}{
+				"var1": types.String("123"),
+			},
+			doVariables: map[string]interface{}{
+				"method": types.NewReferenceToVariable("var2"),
+			},
+			expectedError: errors.New("reference to variable for key method not found: var2"),
+		},
+		{
+			name: "error reference to variable not found in do section nested map",
+			letVariables: map[string]interface{}{
+				"var1": types.String("123"),
+			},
+			doVariables: map[string]interface{}{
+				"map_variable": types.Map{
+					"method": types.NewReferenceToVariable("var2"),
+				},
+			},
+			expectedError: errors.New("reference to variable for key method not found: var2"),
+		},
 	}
 
 	varReplacer := replacer.New()
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			varReplacer.Replace(tc.doVariables, tc.letVariables)
+			err := varReplacer.Replace(tc.doVariables, tc.letVariables)
+
+			if err != nil && tc.expectedError == nil {
+				t.Errorf("expected no error, got %v", err)
+			} else if err == nil && tc.expectedError != nil {
+				t.Errorf("expected error %v, got no error", tc.expectedError)
+			} else if err != nil && tc.expectedError != nil && err.Error() != tc.expectedError.Error() {
+				t.Errorf("expected error %v, got %v", tc.expectedError, err)
+			}
 
 			for key, value := range tc.doVariables {
 				switch val := value.(type) {

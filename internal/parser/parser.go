@@ -113,7 +113,10 @@ func (p *parser) ParseFromFilename(filename string) (*types.DoFile, error) {
 		}
 	}
 
-	p.variablesReplacer.Replace(doVariables, letVariables)
+	err = p.variablesReplacer.Replace(doVariables, letVariables)
+	if err != nil {
+		return nil, err
+	}
 
 	doFile := &types.DoFile{
 		Let: types.Let{
