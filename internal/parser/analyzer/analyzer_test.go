@@ -24,10 +24,11 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				"var3=true",
 				"var4=20.3",
 				"var5=-12",
-				"var6={\"key1\": 1, \"key2\": \"hello\", \"key3\": {\"a\": x}}",
+				"var6={\"key1\": 1, \"key2\": \"hello\", \"key3\": {\"a\": x}, \"key4\": true, \"key5\": 20.3, \"key6\": -12, \"key7\": x, \"key8\": `backticks`}",
 				"var7=`something here`",
 				"var8=\"=string=with=another=\"",
 				"var9=x",
+				"var10=_y",
 			},
 			expected: map[string]interface{}{
 				"var1": types.Int(1),
@@ -41,10 +42,16 @@ func TestAnalyzer_Analyze(t *testing.T) {
 					"key3": types.Map{
 						"a": types.ReferenceToVariable{Value: "x"},
 					},
+					"key4": types.Bool(true),
+					"key5": types.Float(20.3),
+					"key6": types.Int(-12),
+					"key7": types.ReferenceToVariable{Value: "x"},
+					"key8": types.String("backticks"),
 				},
-				"var7": types.String("something here"),
-				"var8": types.String("=string=with=another="),
-				"var9": types.ReferenceToVariable{Value: "x"},
+				"var7":  types.String("something here"),
+				"var8":  types.String("=string=with=another="),
+				"var9":  types.ReferenceToVariable{Value: "x"},
+				"var10": types.ReferenceToVariable{Value: "_y"},
 			},
 		},
 		{
@@ -75,6 +82,34 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				"var1=1.1.1",
 			},
 			expectedError: errors.New("invalid value 1.1.1"),
+		},
+		{
+			name: "error to map invalid value",
+			expressions: types.SectionExpressions{
+				"var1={\"key1\":: 1}",
+			},
+			expectedError: errors.New("invalid value : 1"),
+		},
+		{
+			name: "error to map invalid value",
+			expressions: types.SectionExpressions{
+				"var1={\"key\": 1.1.1}",
+			},
+			expectedError: errors.New("invalid value 1.1.1"),
+		},
+		{
+			name: "error invalid map in map value",
+			expressions: types.SectionExpressions{
+				"var1={\"key\": {\"key\": 1.1.1}}",
+			},
+			expectedError: errors.New("invalid value 1.1.1"),
+		},
+		{
+			name: "error invalid map format",
+			expressions: types.SectionExpressions{
+				"var1={\"key\": 1, \"key\"}",
+			},
+			expectedError: errors.New("invalid value  \"key\""),
 		},
 	}
 

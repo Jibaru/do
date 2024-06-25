@@ -121,10 +121,6 @@ func toMap(value string) (types.Map, error) {
 		key = strings.Trim(key, `"`)
 		val := strings.TrimSpace(pair[1])
 
-		if types.IsReservedKeyword(key) {
-			return nil, NewReservedKeywordError(key)
-		}
-
 		if isStringByQuotes(val) {
 			result[key] = types.String(strings.Trim(val, `"`))
 		} else if isStringByBackticks(val) {
@@ -153,10 +149,6 @@ func toMap(value string) (types.Map, error) {
 }
 
 func isReferenceToVariable(value string) bool {
-	if value == "" {
-		return false
-	}
-
 	for i, char := range value {
 		if i == 0 && unicode.IsDigit(char) {
 			return false
