@@ -186,7 +186,7 @@ The output of the `do` command will be the request + response in a json format.
 }
 ```
 
-The `request` shows the parsed request from the .do file.
+The `do_file` shows the parsed request from the .do file.
 The `response` shows the response from the request if everything works well.
 The `error` shows the error if parsing the .do file or executing the request fails. It is only a string.
 
