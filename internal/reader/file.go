@@ -19,7 +19,7 @@ func NewFileReader() FileReader {
 func (d *fileReader) Read(filename string) (types.FileReaderContent, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return "", NewCanNotReadFileError(err)
+		return "", NewCanNotReadFileError(filename)
 	}
 
 	return types.FileReaderContent(data), nil

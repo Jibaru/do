@@ -23,7 +23,7 @@ func TestFileReader_Read(t *testing.T) {
 		{
 			name:          "error file not found",
 			filename:      "testdata/not_found.do",
-			expectedError: reader.CanNotReadFileError{},
+			expectedError: errors.New("can not read file testdata/not_found.do"),
 		},
 	}
 
@@ -33,7 +33,11 @@ func TestFileReader_Read(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			content, err := fileReader.Read(tc.filename)
 
-			if err != nil && errors.Is(err, tc.expectedError) {
+			if err != nil && tc.expectedError == nil {
+				t.Errorf("expected no error, got %v", err)
+			} else if err == nil && tc.expectedError != nil {
+				t.Errorf("expected error %v, got no error", tc.expectedError)
+			} else if err != nil && tc.expectedError != nil && err.Error() != tc.expectedError.Error() {
 				t.Errorf("expected error %v, got %v", tc.expectedError, err)
 			}
 

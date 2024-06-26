@@ -1,13 +1,13 @@
 package reader
 
 type CanNotReadFileError struct {
-	err error
+	filename string
 }
 
-func NewCanNotReadFileError(err error) error {
-	return CanNotReadFileError{err}
+func NewCanNotReadFileError(filename string) error {
+	return CanNotReadFileError{filename}
 }
 
 func (e CanNotReadFileError) Error() string {
-	return "can not read file: " + e.err.Error()
+	return "can not read file " + e.filename
 }
