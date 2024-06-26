@@ -47,18 +47,20 @@ do filename.do
 
 ```do
 let {
+    base = "https://api.example.com";
     userId = 23;
     token = "the-http-token";
+    page = 1;
     deleted = false;
 }
 
 do {
     method = "POST";
-    url = "https://api.example.com/users/:id";
-    params = {"id": "$userId"};
+    url = "$base/users/:id";
+    params = {"id": userId};
     query = {
-        "actives": true,
-        "deleted": false
+        "p": page,
+        "deleted": deleted
     };
     headers = {
         "Authorization": "Bearer $token",
@@ -112,11 +114,11 @@ The do section specifies the HTTP request to be executed. It contains various fi
 ```do
 do {
     method = "POST";
-    url = "https://api.example.com/users/:id";
-    params = {"id": "$userId"};
+    url = "$base/users/:id";
+    params = {"id": userId};
     query = {
-        "actives": true,
-        "deleted": false
+        "p": page,
+        "deleted": deleted
     };
     headers = {
         "Authorization": "Bearer $token",
@@ -129,7 +131,8 @@ do {
 }
 ```
 
-In the do section, variables defined in the let section can be referenced using the syntax `"$variableName"`.
+In the do section, variables defined in the let section can be referenced using their names.
+You can insert variables in strings using the syntax `"$variableName"`.
 Take in note that `body` is not a map, it is a string.
 
 You should use the `variable = value;` format to define a variable with its value. Values has specific types that are defined below:
@@ -144,6 +147,50 @@ You should use the `variable = value;` format to define a variable with its valu
 | query   | map    | The query params for the request.                                                       | No       | {"active": false, "order": "asc"}     |
 | headers | map    | The headers for the request.                                                            | No       | {"Authorization": "application/json"} |
 | body    | string | The body for the request.                                                               | No       | \`{"name": "john"}\`                  |
+
+## Output
+
+The output of the `do` command will be the request + response in a json format.
+
+```json
+{
+   "do_file": {
+      "let": {
+         "variables": {
+           "token": "token-value"
+         }
+      },
+      "do": {
+         "method": "POST",
+         "url": "https://www.fakepage.com/keys/:id",
+         "params": {
+            "id": 1
+         },
+         "query": {
+            "limit": 1
+         },
+         "headers": {
+           "Authorization": "Bearer token-value"
+         },
+         "body": "value"
+      }
+   },
+   "response": {
+      "status_code": 200,
+      "body": "{\"key\": 123}",
+      "headers": {
+         "Content-Type": "application/json; charset=utf-8",
+      }
+   },
+   "error": null
+}
+```
+
+The `request` shows the parsed request from the .do file.
+The `response` shows the response from the request if everything works well.
+The `error` shows the error if parsing the .do file or executing the request fails. It is only a string.
+
+If you want to use the response into another program, make sure validate error is null before trying to parse the response and request.
 
 ## VS-Code do language support
 
