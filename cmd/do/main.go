@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/jibaru/do/internal/parser/caller"
 	"net/http"
 	"os"
 
@@ -33,7 +34,8 @@ func main() {
 	expressionAnalyzer := analyzer.New()
 	sectionExtractor := extractor.New(sectionTaker, sectionNormalizer, sectionPartitioner, expressionAnalyzer)
 	variablesReplacer := replacer.New()
-	theParser := parser.New(doFileReader, sectionExtractor, variablesReplacer)
+	funcCaller := caller.New()
+	theParser := parser.New(doFileReader, sectionExtractor, variablesReplacer, funcCaller)
 	client := request.NewHttpClient(&http.Client{})
 
 	output := types.CommandLineOutput{}
