@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
@@ -63,8 +64,13 @@ func (a *analyzer) Analyze(expressions types.SectionExpressions) (map[string]int
 			result[key] = types.Float(floatNum)
 		} else if isReferenceToVariable(value) {
 			result[key] = types.NewReferenceToVariable(value)
+		} else if isFunc(value) {
+			funcVal, err := toFunc(value)
+			if err != nil {
+				return nil, err
+			}
+			result[key] = funcVal
 		} else {
-			// otherwise
 			return nil, NewInvalidValueError(value)
 		}
 	}
@@ -82,6 +88,14 @@ func isStringByBackticks(value string) bool {
 
 func isMap(value string) bool {
 	return strings.HasPrefix(value, "{") && strings.HasSuffix(value, "}")
+}
+
+func isFunc(value string) bool {
+	// Regex to match the function call pattern
+	re := regexp.MustCompile(`^(\w+)\(([^)]*)\)$`)
+	matches := re.FindStringSubmatch(value)
+
+	return matches != nil && len(matches) >= 3
 }
 
 func isBool(value string) bool {
@@ -140,6 +154,12 @@ func toMap(value string) (types.Map, error) {
 			result[key] = types.Float(floatNum)
 		} else if isReferenceToVariable(val) {
 			result[key] = types.NewReferenceToVariable(val)
+		} else if isFunc(value) {
+			funcVal, err := toFunc(val)
+			if err != nil {
+				return nil, err
+			}
+			result[key] = funcVal
 		} else {
 			return nil, NewInvalidValueError(val)
 		}
@@ -160,4 +180,28 @@ func isReferenceToVariable(value string) bool {
 	}
 
 	return true
+}
+
+func toFunc(value string) (interface{}, error) {
+	re := regexp.MustCompile(`^(\w+)\(([^)]*)\)$`)
+	matches := re.FindStringSubmatch(value)
+
+	if matches == nil || len(matches) < 2 {
+		return nil, ReadingExpressionError{parts: matches}
+	}
+
+	funcName := matches[1]
+	args := strings.Split(matches[2], ",")
+
+	for i := range args {
+		args[i] = strings.TrimSpace(args[i])
+		args[i] = strings.Trim(args[i], `"`)
+	}
+
+	switch funcName {
+	case types.EnvFuncName:
+		return types.NewEnvFuncFromArgs(args)
+	default:
+		return nil, NewInvalidValueError(value)
+	}
 }

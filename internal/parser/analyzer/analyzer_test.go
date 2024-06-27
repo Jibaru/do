@@ -29,6 +29,7 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				"var8=\"=string=with=another=\"",
 				"var9=x",
 				"var10=_y",
+				"var11=env(\"OS_VAR\", \"default\")",
 			},
 			expected: map[string]interface{}{
 				"var1": types.Int(1),
@@ -52,6 +53,19 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				"var8":  types.String("=string=with=another="),
 				"var9":  types.ReferenceToVariable{Value: "x"},
 				"var10": types.ReferenceToVariable{Value: "_y"},
+				"var11": types.EnvFunc{Arg1: "OS_VAR", Arg2: "default"},
+			},
+		},
+		{
+			// TODO: make sure this test is passing
+			name: "success map with call",
+			expressions: types.SectionExpressions{
+				"var12={\"key1\": env(\"OS_VAR\", \"default2\")}",
+			},
+			expected: map[string]interface{}{
+				"var12": types.Map{
+					"key1": types.EnvFunc{Arg1: "OS_VAR", Arg2: "default2"},
+				},
 			},
 		},
 		{
