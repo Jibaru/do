@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jibaru/do/internal/parser/caller"
 	"github.com/jibaru/do/internal/parser/extractor"
 	"github.com/jibaru/do/internal/parser/replacer"
 	"github.com/jibaru/do/internal/reader"
@@ -18,17 +19,20 @@ type parser struct {
 	doFileReader      reader.FileReader
 	sectionExtractor  extractor.Extractor
 	variablesReplacer replacer.Replacer
+	funcCaller        caller.Caller
 }
 
 func New(
 	doFileReader reader.FileReader,
 	sectionExtractor extractor.Extractor,
 	variablesReplacer replacer.Replacer,
+	funcCaller caller.Caller,
 ) Parser {
 	return &parser{
 		doFileReader,
 		sectionExtractor,
 		variablesReplacer,
+		funcCaller,
 	}
 }
 
@@ -62,6 +66,16 @@ func (p *parser) ParseFromFilename(filename string) (*types.DoFile, error) {
 
 	if doVariables[types.DoURL] == nil {
 		return nil, NewURLRequiredError()
+	}
+
+	err = p.variablesReplacer.Replace(doVariables, letVariables)
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.funcCaller.Call(letVariables, doVariables)
+	if err != nil {
+		return nil, err
 	}
 
 	if _, ok := doVariables[types.DoMethod].(types.String); !ok {
@@ -111,11 +125,6 @@ func (p *parser) ParseFromFilename(filename string) (*types.DoFile, error) {
 				fmt.Sprintf("%T", doVariables[types.DoHeaders]),
 			)
 		}
-	}
-
-	err = p.variablesReplacer.Replace(doVariables, letVariables)
-	if err != nil {
-		return nil, err
 	}
 
 	doFile := &types.DoFile{

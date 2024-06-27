@@ -2,6 +2,7 @@ package parser_test
 
 import (
 	"errors"
+	"github.com/jibaru/do/internal/parser/caller"
 	"reflect"
 	"testing"
 
@@ -24,6 +25,7 @@ func TestParser_FromFilename(t *testing.T) {
 		FileReaderFn  func(filename string) (types.FileReaderContent, error)
 		ExtractorFn   func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error)
 		ReplacerFn    func(doVariables map[string]interface{}, letVariables map[string]interface{}) error
+		CallerFn      func(letVariables map[string]interface{}, doVariables map[string]interface{}) error
 	}{
 		{
 			name:     "success",
@@ -79,6 +81,9 @@ func TestParser_FromFilename(t *testing.T) {
 				doVariables["body"] = body
 				return nil
 			},
+			CallerFn: func(letVariables map[string]interface{}, doVariables map[string]interface{}) error {
+				return nil
+			},
 		},
 		{
 			name:          "error in file reader",
@@ -91,6 +96,9 @@ func TestParser_FromFilename(t *testing.T) {
 				return nil, nil
 			},
 			ReplacerFn: func(doVariables map[string]interface{}, letVariables map[string]interface{}) error {
+				return nil
+			},
+			CallerFn: func(letVariables map[string]interface{}, doVariables map[string]interface{}) error {
 				return nil
 			},
 		},
@@ -136,6 +144,9 @@ func TestParser_FromFilename(t *testing.T) {
 				doVariables["query"] = types.Map{"isOk": types.String("false")}
 				doVariables["headers"] = types.Map{"Authorization": types.String("Bearer text")}
 				doVariables["body"] = body
+				return nil
+			},
+			CallerFn: func(letVariables map[string]interface{}, doVariables map[string]interface{}) error {
 				return nil
 			},
 		},
@@ -238,6 +249,9 @@ func TestParser_FromFilename(t *testing.T) {
 			ReplacerFn: func(doVariables map[string]interface{}, letVariables map[string]interface{}) error {
 				return nil
 			},
+			CallerFn: func(letVariables map[string]interface{}, doVariables map[string]interface{}) error {
+				return nil
+			},
 		},
 		{
 			name:          "error type not expected for url",
@@ -255,6 +269,9 @@ func TestParser_FromFilename(t *testing.T) {
 				return nil, nil
 			},
 			ReplacerFn: func(doVariables map[string]interface{}, letVariables map[string]interface{}) error {
+				return nil
+			},
+			CallerFn: func(letVariables map[string]interface{}, doVariables map[string]interface{}) error {
 				return nil
 			},
 		},
@@ -275,6 +292,9 @@ func TestParser_FromFilename(t *testing.T) {
 				return nil, nil
 			},
 			ReplacerFn: func(doVariables map[string]interface{}, letVariables map[string]interface{}) error {
+				return nil
+			},
+			CallerFn: func(letVariables map[string]interface{}, doVariables map[string]interface{}) error {
 				return nil
 			},
 		},
@@ -298,6 +318,9 @@ func TestParser_FromFilename(t *testing.T) {
 			ReplacerFn: func(doVariables map[string]interface{}, letVariables map[string]interface{}) error {
 				return nil
 			},
+			CallerFn: func(letVariables map[string]interface{}, doVariables map[string]interface{}) error {
+				return nil
+			},
 		},
 		{
 			name:          "error type not expected for headers",
@@ -318,6 +341,9 @@ func TestParser_FromFilename(t *testing.T) {
 				return nil, nil
 			},
 			ReplacerFn: func(doVariables map[string]interface{}, letVariables map[string]interface{}) error {
+				return nil
+			},
+			CallerFn: func(letVariables map[string]interface{}, doVariables map[string]interface{}) error {
 				return nil
 			},
 		},
@@ -343,19 +369,46 @@ func TestParser_FromFilename(t *testing.T) {
 				return errors.New("replacer error")
 			},
 		},
+		{
+			name:          "error in caller",
+			expectedError: errors.New("caller error"),
+			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
+				return "", nil
+			},
+			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+				if section == types.DoSection {
+					return map[string]interface{}{
+						"method":  types.String("PUT"),
+						"url":     types.String("http://localhost:8080"),
+						"params":  types.Map{"id": types.Int(12)},
+						"query":   types.Map{"isOk": types.Bool(true)},
+						"headers": types.Map{"Authorization": types.String("token")},
+					}, nil
+				}
+				return nil, nil
+			},
+			ReplacerFn: func(doVariables map[string]interface{}, letVariables map[string]interface{}) error {
+				return nil
+			},
+			CallerFn: func(letVariables map[string]interface{}, doVariables map[string]interface{}) error {
+				return errors.New("caller error")
+			},
+		},
 	}
 
 	fileReader := &reader.Mock{}
 	sectionExtractor := &extractor.Mock{}
 	varReplacer := &replacer.Mock{}
+	funcCaller := &caller.Mock{}
 
-	p := parser.New(fileReader, sectionExtractor, varReplacer)
+	p := parser.New(fileReader, sectionExtractor, varReplacer, funcCaller)
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			fileReader.ReadFn = tc.FileReaderFn
 			sectionExtractor.ExtractFn = tc.ExtractorFn
 			varReplacer.ReplaceFn = tc.ReplacerFn
+			funcCaller.CallFn = tc.CallerFn
 
 			doFile, err := p.ParseFromFilename(tc.filename)
 
