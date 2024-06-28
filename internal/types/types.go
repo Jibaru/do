@@ -10,6 +10,9 @@ type Section string
 // FileReaderContent defines the content of a .do file
 type FileReaderContent string
 
+// CleanedContent defines the cleaned content of a .do file
+type CleanedContent string
+
 // RawSectionContent defines the raw content of a section
 type RawSectionContent string
 
