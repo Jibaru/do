@@ -16,10 +16,10 @@ func TestExtractor_Extract(t *testing.T) {
 	testCases := []struct {
 		name          string
 		section       types.Section
-		rawContent    types.FileReaderContent
+		rawContent    types.CleanedContent
 		expected      map[string]interface{}
 		expectedError error
-		takeFn        func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error)
+		takeFn        func(section types.Section, text types.CleanedContent) (types.RawSectionContent, error)
 		normalizerFn  func(content types.RawSectionContent) (types.NormalizedSectionContent, error)
 		splitFn       func(content types.NormalizedSectionContent) (types.SectionExpressions, error)
 		analyzeFn     func(expressions types.SectionExpressions) (map[string]interface{}, error)
@@ -39,7 +39,7 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				"body": `{"extra":true}`,
 			},
-			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+			takeFn: func(section types.Section, text types.CleanedContent) (types.RawSectionContent, error) {
 				return "method=\"GET\";url=\"https://localhost:8080/api/v1/tests\";params={\"id\":12};headers={\"Authorization\":\"Bearer token\"};body=`{\"extra\":true}`;", nil
 			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
@@ -78,7 +78,7 @@ func TestExtractor_Extract(t *testing.T) {
 				"var3": false,
 				"var4": 12.33,
 			},
-			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+			takeFn: func(section types.Section, text types.CleanedContent) (types.RawSectionContent, error) {
 				return "var1=12;var2=\"text\";var3=false;var4=12.33;", nil
 			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
@@ -106,7 +106,7 @@ func TestExtractor_Extract(t *testing.T) {
 			section:       types.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}`,
 			expectedError: errors.New("no block found"),
-			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+			takeFn: func(section types.Section, text types.CleanedContent) (types.RawSectionContent, error) {
 				return "", taker.NoBlockError{}
 			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
@@ -124,7 +124,7 @@ func TestExtractor_Extract(t *testing.T) {
 			section:       types.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}do`,
 			expectedError: errors.New("missing opening brace"),
-			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+			takeFn: func(section types.Section, text types.CleanedContent) (types.RawSectionContent, error) {
 				return "", errors.New("missing opening brace")
 			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
@@ -142,7 +142,7 @@ func TestExtractor_Extract(t *testing.T) {
 			section:       types.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}`,
 			expectedError: errors.New("no block found"),
-			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+			takeFn: func(section types.Section, text types.CleanedContent) (types.RawSectionContent, error) {
 				return "", nil
 			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
@@ -160,7 +160,7 @@ func TestExtractor_Extract(t *testing.T) {
 			section:       types.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}`,
 			expectedError: errors.New("error in normalizer"),
-			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+			takeFn: func(section types.Section, text types.CleanedContent) (types.RawSectionContent, error) {
 				return "", nil
 			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
@@ -178,7 +178,7 @@ func TestExtractor_Extract(t *testing.T) {
 			section:       types.DoSection,
 			rawContent:    `let{var1=12;var2="text";var3=false;var4=12.33;}`,
 			expectedError: errors.New("error in splitter"),
-			takeFn: func(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+			takeFn: func(section types.Section, text types.CleanedContent) (types.RawSectionContent, error) {
 				return "", nil
 			},
 			normalizerFn: func(content types.RawSectionContent) (types.NormalizedSectionContent, error) {
