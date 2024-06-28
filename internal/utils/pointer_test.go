@@ -1,53 +1,69 @@
 package utils
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
-func TestPtr(t *testing.T) {
-	integerVal := 1
-	stringVal := "string"
-	boolVal := true
-	floatVal := 1.1
-	mapVal := map[string]interface{}{"key": "value"}
+func TestPtr_int(t *testing.T) {
+	expected := 1
+	actual := Ptr(expected)
 
-	testCases := []struct {
-		name     string
-		value    interface{}
-		expected interface{}
-	}{
-		{
-			name:     "int",
-			value:    integerVal,
-			expected: &integerVal,
-		},
-		{
-			name:     "string",
-			value:    stringVal,
-			expected: &stringVal,
-		},
-		{
-			name:     "bool",
-			value:    boolVal,
-			expected: &boolVal,
-		},
-		{
-			name:     "float",
-			value:    floatVal,
-			expected: &floatVal,
-		},
-		{
-			name:     "map",
-			value:    mapVal,
-			expected: &mapVal,
-		},
+	if expected != *actual {
+		t.Errorf("expected %v, got %v", expected, actual)
+	}
+}
+
+func TestPtr_string(t *testing.T) {
+	expected := "hello"
+	actual := Ptr(expected)
+
+	if expected != *actual {
+		t.Errorf("expected %v, got %v", expected, actual)
+	}
+}
+
+func TestPtr_bool(t *testing.T) {
+	actual := Ptr(true)
+
+	if true != *actual {
+		t.Errorf("expected %v, got %v", true, actual)
+	}
+}
+
+func TestPtr_struct(t *testing.T) {
+	type testStruct struct {
+		Field1 string
+		Field2 int
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := Ptr(tc.value)
+	expected := testStruct{
+		Field1: "hello",
+		Field2: 1,
+	}
+	actual := Ptr(expected)
 
-			if *result != *tc.expected.(*int) {
-				t.Errorf("expected %v, got %v", tc.expected, result)
-			}
-		})
+	if expected != *actual {
+		t.Errorf("expected %v, got %v", expected, actual)
+	}
+}
+
+func TestPtr_slice(t *testing.T) {
+	expected := []string{"hello", "world"}
+	actual := Ptr(expected)
+
+	if &expected[0] != &(*actual)[0] {
+		t.Errorf("expected %v, got %v", expected, actual)
+	}
+}
+
+func TestPtr_map(t *testing.T) {
+	expected := map[string]string{
+		"hello": "world",
+	}
+	actual := Ptr(expected)
+
+	if !reflect.DeepEqual(expected, *actual) {
+		t.Errorf("expected %v, got %v", expected, actual)
 	}
 }
