@@ -2,11 +2,12 @@ package parser_test
 
 import (
 	"errors"
-	"github.com/jibaru/do/internal/parser/caller"
 	"reflect"
 	"testing"
 
 	"github.com/jibaru/do/internal/parser"
+	"github.com/jibaru/do/internal/parser/caller"
+	"github.com/jibaru/do/internal/parser/cleaner"
 	"github.com/jibaru/do/internal/parser/extractor"
 	"github.com/jibaru/do/internal/parser/replacer"
 	"github.com/jibaru/do/internal/reader"
@@ -23,7 +24,8 @@ func TestParser_FromFilename(t *testing.T) {
 		expected      *types.DoFile
 		expectedError error
 		FileReaderFn  func(filename string) (types.FileReaderContent, error)
-		ExtractorFn   func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error)
+		CleanerFn     func(content types.FileReaderContent) (types.CleanedContent, error)
+		ExtractorFn   func(section types.Section, content types.CleanedContent) (map[string]interface{}, error)
 		ReplacerFn    func(doVariables map[string]interface{}, letVariables map[string]interface{}) error
 		CallerFn      func(letVariables map[string]interface{}, doVariables map[string]interface{}) error
 	}{
@@ -51,7 +53,10 @@ func TestParser_FromFilename(t *testing.T) {
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
 				return "let{var1=12;var2=\"text\";var3=false;var4=12.33;}do{method=\"GET\";url=\"http://localhost:8080/api/todos/:id\";params={\"id\":\"$id\"};query={\"isOk\":\"$isOk\"};headers={\"Authorization\":\"Bearer $token\"};body=`{\"extra\": $extra, \"extra2\": $extra2, \"extra3\": \"$extra3\", \"extra4\": $extra4}`;}", nil
 			},
-			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+			CleanerFn: func(content types.FileReaderContent) (types.CleanedContent, error) {
+				return "let{var1=12;var2=\"text\";var3=false;var4=12.33;}do{method=\"GET\";url=\"http://localhost:8080/api/todos/:id\";params={\"id\":\"$id\"};query={\"isOk\":\"$isOk\"};headers={\"Authorization\":\"Bearer $token\"};body=`{\"extra\": $extra, \"extra2\": $extra2, \"extra3\": \"$extra3\", \"extra4\": $extra4}`;}", nil
+			},
+			ExtractorFn: func(section types.Section, content types.CleanedContent) (map[string]interface{}, error) {
 				if section == types.LetSection {
 					return map[string]interface{}{
 						"var1": types.Int(12),
@@ -92,7 +97,10 @@ func TestParser_FromFilename(t *testing.T) {
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
 				return "", errors.New("file reader error")
 			},
-			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+			CleanerFn: func(content types.FileReaderContent) (types.CleanedContent, error) {
+				return "", nil
+			},
+			ExtractorFn: func(section types.Section, content types.CleanedContent) (map[string]interface{}, error) {
 				return nil, nil
 			},
 			ReplacerFn: func(doVariables map[string]interface{}, letVariables map[string]interface{}) error {
@@ -121,7 +129,10 @@ func TestParser_FromFilename(t *testing.T) {
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
 				return "let{var1=12;var2=\"text\";var3=false;var4=12.33;}do{method=\"GET\";url=\"http://localhost:8080/api/todos/:id\";params={\"id\":\"$id\"};query={\"isOk\":\"$isOk\"};headers={\"Authorization\":\"Bearer $token\"};body=`{\"extra\": $extra, \"extra2\": $extra2, \"extra3\": \"$extra3\", \"extra4\": $extra4}`;}", nil
 			},
-			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+			CleanerFn: func(content types.FileReaderContent) (types.CleanedContent, error) {
+				return "let{var1=12;var2=\"text\";var3=false;var4=12.33;}do{method=\"GET\";url=\"http://localhost:8080/api/todos/:id\";params={\"id\":\"$id\"};query={\"isOk\":\"$isOk\"};headers={\"Authorization\":\"Bearer $token\"};body=`{\"extra\": $extra, \"extra2\": $extra2, \"extra3\": \"$extra3\", \"extra4\": $extra4}`;}", nil
+			},
+			ExtractorFn: func(section types.Section, content types.CleanedContent) (map[string]interface{}, error) {
 				if section == types.LetSection {
 					return nil, extractor.ErrSectionExtractorNoBlock
 				}
@@ -157,7 +168,10 @@ func TestParser_FromFilename(t *testing.T) {
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
 				return "", nil
 			},
-			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+			CleanerFn: func(content types.FileReaderContent) (types.CleanedContent, error) {
+				return "", nil
+			},
+			ExtractorFn: func(section types.Section, content types.CleanedContent) (map[string]interface{}, error) {
 				if section == types.LetSection {
 					return nil, errors.New("extractor error")
 				}
@@ -174,7 +188,10 @@ func TestParser_FromFilename(t *testing.T) {
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
 				return "", nil
 			},
-			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+			CleanerFn: func(content types.FileReaderContent) (types.CleanedContent, error) {
+				return "", nil
+			},
+			ExtractorFn: func(section types.Section, content types.CleanedContent) (map[string]interface{}, error) {
 				if section == types.DoSection {
 					return nil, errors.New("extractor error")
 				}
@@ -190,7 +207,10 @@ func TestParser_FromFilename(t *testing.T) {
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
 				return "", nil
 			},
-			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+			CleanerFn: func(content types.FileReaderContent) (types.CleanedContent, error) {
+				return "", nil
+			},
+			ExtractorFn: func(section types.Section, content types.CleanedContent) (map[string]interface{}, error) {
 				return nil, nil
 			},
 			ReplacerFn: func(doVariables map[string]interface{}, letVariables map[string]interface{}) error {
@@ -203,7 +223,10 @@ func TestParser_FromFilename(t *testing.T) {
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
 				return "", nil
 			},
-			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+			CleanerFn: func(content types.FileReaderContent) (types.CleanedContent, error) {
+				return "", nil
+			},
+			ExtractorFn: func(section types.Section, content types.CleanedContent) (map[string]interface{}, error) {
 				if section == types.DoSection {
 					return map[string]interface{}{}, nil
 				}
@@ -219,7 +242,10 @@ func TestParser_FromFilename(t *testing.T) {
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
 				return "", nil
 			},
-			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+			CleanerFn: func(content types.FileReaderContent) (types.CleanedContent, error) {
+				return "", nil
+			},
+			ExtractorFn: func(section types.Section, content types.CleanedContent) (map[string]interface{}, error) {
 				if section == types.DoSection {
 					return map[string]interface{}{
 						"method": types.String("GET"),
@@ -237,7 +263,10 @@ func TestParser_FromFilename(t *testing.T) {
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
 				return "", nil
 			},
-			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+			CleanerFn: func(content types.FileReaderContent) (types.CleanedContent, error) {
+				return "", nil
+			},
+			ExtractorFn: func(section types.Section, content types.CleanedContent) (map[string]interface{}, error) {
 				if section == types.DoSection {
 					return map[string]interface{}{
 						"method": 127,
@@ -259,7 +288,10 @@ func TestParser_FromFilename(t *testing.T) {
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
 				return "", nil
 			},
-			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+			CleanerFn: func(content types.FileReaderContent) (types.CleanedContent, error) {
+				return "", nil
+			},
+			ExtractorFn: func(section types.Section, content types.CleanedContent) (map[string]interface{}, error) {
 				if section == types.DoSection {
 					return map[string]interface{}{
 						"method": types.String("PUT"),
@@ -281,7 +313,10 @@ func TestParser_FromFilename(t *testing.T) {
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
 				return "", nil
 			},
-			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+			CleanerFn: func(content types.FileReaderContent) (types.CleanedContent, error) {
+				return "", nil
+			},
+			ExtractorFn: func(section types.Section, content types.CleanedContent) (map[string]interface{}, error) {
 				if section == types.DoSection {
 					return map[string]interface{}{
 						"method": types.String("PUT"),
@@ -304,7 +339,10 @@ func TestParser_FromFilename(t *testing.T) {
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
 				return "", nil
 			},
-			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+			CleanerFn: func(content types.FileReaderContent) (types.CleanedContent, error) {
+				return "", nil
+			},
+			ExtractorFn: func(section types.Section, content types.CleanedContent) (map[string]interface{}, error) {
 				if section == types.DoSection {
 					return map[string]interface{}{
 						"method": types.String("PUT"),
@@ -328,7 +366,10 @@ func TestParser_FromFilename(t *testing.T) {
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
 				return "", nil
 			},
-			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+			CleanerFn: func(content types.FileReaderContent) (types.CleanedContent, error) {
+				return "", nil
+			},
+			ExtractorFn: func(section types.Section, content types.CleanedContent) (map[string]interface{}, error) {
 				if section == types.DoSection {
 					return map[string]interface{}{
 						"method":  types.String("PUT"),
@@ -353,7 +394,10 @@ func TestParser_FromFilename(t *testing.T) {
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
 				return "", nil
 			},
-			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+			CleanerFn: func(content types.FileReaderContent) (types.CleanedContent, error) {
+				return "", nil
+			},
+			ExtractorFn: func(section types.Section, content types.CleanedContent) (map[string]interface{}, error) {
 				if section == types.DoSection {
 					return map[string]interface{}{
 						"method":  types.String("PUT"),
@@ -378,7 +422,10 @@ func TestParser_FromFilename(t *testing.T) {
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
 				return "", nil
 			},
-			ExtractorFn: func(section types.Section, content types.FileReaderContent) (map[string]interface{}, error) {
+			CleanerFn: func(content types.FileReaderContent) (types.CleanedContent, error) {
+				return "", nil
+			},
+			ExtractorFn: func(section types.Section, content types.CleanedContent) (map[string]interface{}, error) {
 				if section == types.DoSection {
 					return map[string]interface{}{
 						"method":  types.String("PUT"),
@@ -400,15 +447,17 @@ func TestParser_FromFilename(t *testing.T) {
 	}
 
 	fileReader := &reader.Mock{}
+	commentCleaner := &cleaner.Mock{}
 	sectionExtractor := &extractor.Mock{}
 	varReplacer := &replacer.Mock{}
 	funcCaller := &caller.Mock{}
 
-	p := parser.New(fileReader, sectionExtractor, varReplacer, funcCaller)
+	p := parser.New(fileReader, commentCleaner, sectionExtractor, varReplacer, funcCaller)
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			fileReader.ReadFn = tc.FileReaderFn
+			commentCleaner.CleanFn = tc.CleanerFn
 			sectionExtractor.ExtractFn = tc.ExtractorFn
 			varReplacer.ReplaceFn = tc.ReplacerFn
 			funcCaller.CallFn = tc.CallerFn

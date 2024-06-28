@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jibaru/do/internal/parser/caller"
+	"github.com/jibaru/do/internal/parser/cleaner"
 	"github.com/jibaru/do/internal/parser/extractor"
 	"github.com/jibaru/do/internal/parser/replacer"
 	"github.com/jibaru/do/internal/reader"
@@ -17,6 +18,7 @@ type Parser interface {
 
 type parser struct {
 	doFileReader      reader.FileReader
+	commentCleaner    cleaner.Cleaner
 	sectionExtractor  extractor.Extractor
 	variablesReplacer replacer.Replacer
 	funcCaller        caller.Caller
@@ -24,12 +26,14 @@ type parser struct {
 
 func New(
 	doFileReader reader.FileReader,
+	commentCleaner cleaner.Cleaner,
 	sectionExtractor extractor.Extractor,
 	variablesReplacer replacer.Replacer,
 	funcCaller caller.Caller,
 ) Parser {
 	return &parser{
 		doFileReader,
+		commentCleaner,
 		sectionExtractor,
 		variablesReplacer,
 		funcCaller,
@@ -42,7 +46,12 @@ func (p *parser) ParseFromFilename(filename string) (*types.DoFile, error) {
 		return nil, err
 	}
 
-	letVariables, err := p.sectionExtractor.Extract(types.LetSection, content)
+	cleanedContent, err := p.commentCleaner.Clean(content)
+	if err != nil {
+		return nil, err
+	}
+
+	letVariables, err := p.sectionExtractor.Extract(types.LetSection, cleanedContent)
 	if err != nil {
 		if errors.Is(err, extractor.ErrSectionExtractorNoBlock) {
 			letVariables = nil
@@ -51,7 +60,7 @@ func (p *parser) ParseFromFilename(filename string) (*types.DoFile, error) {
 		}
 	}
 
-	doVariables, err := p.sectionExtractor.Extract(types.DoSection, content)
+	doVariables, err := p.sectionExtractor.Extract(types.DoSection, cleanedContent)
 	if err != nil {
 		return nil, err
 	}
