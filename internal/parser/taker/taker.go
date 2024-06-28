@@ -7,7 +7,7 @@ import (
 )
 
 type Taker interface {
-	Take(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error)
+	Take(section types.Section, text types.CleanedContent) (types.RawSectionContent, error)
 }
 
 type taker struct{}
@@ -16,7 +16,7 @@ func New() Taker {
 	return &taker{}
 }
 
-func (t *taker) Take(section types.Section, text types.FileReaderContent) (types.RawSectionContent, error) {
+func (t *taker) Take(section types.Section, text types.CleanedContent) (types.RawSectionContent, error) {
 	inBlock := false
 	textInNoBlocks := strings.Builder{}
 

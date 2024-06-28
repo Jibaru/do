@@ -12,7 +12,7 @@ func TestTaker_Take(t *testing.T) {
 	testCases := []struct {
 		name          string
 		section       types.Section
-		text          types.FileReaderContent
+		text          types.CleanedContent
 		expected      types.RawSectionContent
 		expectedError error
 	}{
