@@ -68,12 +68,12 @@ func (p *parser) ParseFromFilename(filename string) (*types.DoFile, error) {
 		return nil, NewURLRequiredError()
 	}
 
-	err = p.variablesReplacer.Replace(doVariables, letVariables)
+	err = p.funcCaller.Call(letVariables, doVariables)
 	if err != nil {
 		return nil, err
 	}
 
-	err = p.funcCaller.Call(letVariables, doVariables)
+	err = p.variablesReplacer.Replace(doVariables, letVariables)
 	if err != nil {
 		return nil, err
 	}

@@ -365,6 +365,9 @@ func TestParser_FromFilename(t *testing.T) {
 				}
 				return nil, nil
 			},
+			CallerFn: func(letVariables map[string]interface{}, doVariables map[string]interface{}) error {
+				return nil
+			},
 			ReplacerFn: func(doVariables map[string]interface{}, letVariables map[string]interface{}) error {
 				return errors.New("replacer error")
 			},
