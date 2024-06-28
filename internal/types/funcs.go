@@ -2,6 +2,7 @@ package types
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 )
@@ -12,7 +13,7 @@ type EmptyArgError struct {
 }
 
 func (e EmptyArgError) Error() string {
-	return e.funcName + " arg" + string(e.position) + " is empty"
+	return e.funcName + " arg" + fmt.Sprintf("%v", e.position) + " is empty"
 }
 
 const (
