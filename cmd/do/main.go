@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/jibaru/do/internal/parser/caller"
 	"net/http"
 	"os"
 
 	"github.com/jibaru/do/internal/parser"
 	"github.com/jibaru/do/internal/parser/analyzer"
+	"github.com/jibaru/do/internal/parser/caller"
+	"github.com/jibaru/do/internal/parser/cleaner"
 	"github.com/jibaru/do/internal/parser/extractor"
 	"github.com/jibaru/do/internal/parser/normalizer"
 	"github.com/jibaru/do/internal/parser/partitioner"
@@ -28,6 +29,7 @@ func main() {
 	filename := os.Args[1]
 
 	doFileReader := reader.NewFileReader()
+	commentCleaner := cleaner.New()
 	sectionTaker := taker.New()
 	sectionNormalizer := normalizer.New()
 	sectionPartitioner := partitioner.New()
@@ -35,7 +37,7 @@ func main() {
 	sectionExtractor := extractor.New(sectionTaker, sectionNormalizer, sectionPartitioner, expressionAnalyzer)
 	variablesReplacer := replacer.New()
 	funcCaller := caller.New()
-	theParser := parser.New(doFileReader, sectionExtractor, variablesReplacer, funcCaller)
+	theParser := parser.New(doFileReader, commentCleaner, sectionExtractor, variablesReplacer, funcCaller)
 	client := request.NewHttpClient(&http.Client{})
 
 	output := types.CommandLineOutput{}
