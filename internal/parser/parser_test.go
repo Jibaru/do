@@ -12,7 +12,6 @@ import (
 	"github.com/jibaru/do/internal/parser/replacer"
 	"github.com/jibaru/do/internal/reader"
 	"github.com/jibaru/do/internal/types"
-	"github.com/jibaru/do/internal/utils"
 )
 
 func TestParser_FromFilename(t *testing.T) {
@@ -47,7 +46,7 @@ func TestParser_FromFilename(t *testing.T) {
 					Params:  types.Map{"id": types.String("12")},
 					Query:   types.Map{"isOk": types.String("false")},
 					Headers: types.Map{"Authorization": types.String("Bearer text")},
-					Body:    utils.Ptr(body),
+					Body:    body,
 				},
 			},
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {
@@ -123,7 +122,7 @@ func TestParser_FromFilename(t *testing.T) {
 					Params:  types.Map{"id": types.String("12")},
 					Query:   types.Map{"isOk": types.String("false")},
 					Headers: types.Map{"Authorization": types.String("Bearer text")},
-					Body:    utils.Ptr(body),
+					Body:    body,
 				},
 			},
 			FileReaderFn: func(filename string) (types.FileReaderContent, error) {

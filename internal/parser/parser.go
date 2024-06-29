@@ -159,9 +159,17 @@ func (p *parser) ParseFromFilename(filename string) (*types.DoFile, error) {
 	}
 
 	if mp, ok := doVariables[types.DoBody]; ok {
-		body := mp.(types.String)
-		if body != "" {
-			doFile.Do.Body = &body
+		switch mp.(type) {
+		case types.String:
+			doFile.Do.Body = mp.(types.String)
+		case types.Map:
+			doFile.Do.Body = mp.(types.Map)
+		default:
+			return nil, NewTypeNotExpectedError(
+				types.DoBody,
+				fmt.Sprintf("types.String or types.Map[string]interface{}"),
+				fmt.Sprintf("%T", doVariables[types.DoBody]),
+			)
 		}
 	}
 

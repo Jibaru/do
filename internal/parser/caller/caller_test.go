@@ -25,6 +25,9 @@ func TestCaller_Call(t *testing.T) {
 					Arg1: "NO_EXISTS",
 					Arg2: "default1",
 				},
+				"var3": types.FileFunc{
+					Path: "/path/to/file",
+				},
 			},
 			doVariables: map[string]interface{}{
 				"var3": types.String("value3"),
@@ -32,14 +35,19 @@ func TestCaller_Call(t *testing.T) {
 					Arg1: "NO_EXISTS",
 					Arg2: "default2",
 				},
+				"var5": types.FileFunc{
+					Path: "/path/to/file",
+				},
 			},
 			expectedLetVariables: map[string]interface{}{
 				"var1": types.String("value1"),
 				"var2": types.String("default1"),
+				"var3": types.File{Path: "/path/to/file"},
 			},
 			expectedDoVariables: map[string]interface{}{
 				"var3": types.String("value3"),
 				"var4": types.String("default2"),
+				"var5": types.File{Path: "/path/to/file"},
 			},
 		},
 	}

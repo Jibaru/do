@@ -95,7 +95,16 @@ func isFunc(value string) bool {
 	re := regexp.MustCompile(`^(\w+)\(([^)]*)\)$`)
 	matches := re.FindStringSubmatch(value)
 
-	return matches != nil && len(matches) >= 3
+	if matches == nil {
+		return false
+	}
+
+	if len(matches) < 2 {
+		return false
+	}
+
+	return matches[1] == types.EnvFuncName ||
+		matches[1] == types.FileFuncName
 }
 
 func isBool(value string) bool {
@@ -201,6 +210,8 @@ func toFunc(value string) (interface{}, error) {
 	switch funcName {
 	case types.EnvFuncName:
 		return types.NewEnvFuncFromArgs(args)
+	case types.FileFuncName:
+		return types.NewFileFuncFromArgs(args)
 	default:
 		return nil, NewInvalidValueError(value)
 	}

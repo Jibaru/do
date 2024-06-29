@@ -18,7 +18,10 @@ func (c *caller) Call(letVariables map[string]interface{}, doVariables map[strin
 		switch value.(type) {
 		case types.EnvFunc:
 			envFunc := value.(types.EnvFunc)
-			letVariables[name] = types.String(envFunc.Exec())
+			letVariables[name] = envFunc.Exec()
+		case types.FileFunc:
+			fileFunc := value.(types.FileFunc)
+			letVariables[name] = fileFunc.Exec()
 		}
 	}
 
@@ -26,7 +29,10 @@ func (c *caller) Call(letVariables map[string]interface{}, doVariables map[strin
 		switch value.(type) {
 		case types.EnvFunc:
 			envFunc := value.(types.EnvFunc)
-			doVariables[name] = types.String(envFunc.Exec())
+			doVariables[name] = envFunc.Exec()
+		case types.FileFunc:
+			fileFunc := value.(types.FileFunc)
+			doVariables[name] = fileFunc.Exec()
 		}
 	}
 

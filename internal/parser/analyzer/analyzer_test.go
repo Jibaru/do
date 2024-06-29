@@ -30,6 +30,7 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				"var9=x",
 				"var10=_y",
 				"var11=env(\"OS_VAR\", \"default\")",
+				"var12=file(\"/path/to/file\")",
 			},
 			expected: map[string]interface{}{
 				"var1": types.Int(1),
@@ -54,6 +55,7 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				"var9":  types.ReferenceToVariable{Value: "x"},
 				"var10": types.ReferenceToVariable{Value: "_y"},
 				"var11": types.EnvFunc{Arg1: "OS_VAR", Arg2: "default"},
+				"var12": types.FileFunc{Path: "/path/to/file"},
 			},
 		},
 		/*{
