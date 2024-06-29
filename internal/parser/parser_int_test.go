@@ -16,7 +16,6 @@ import (
 	"github.com/jibaru/do/internal/parser/taker"
 	"github.com/jibaru/do/internal/reader"
 	"github.com/jibaru/do/internal/types"
-	"github.com/jibaru/do/internal/utils"
 )
 
 func TestParser_ParseFromFilename_Integration(t *testing.T) {
@@ -66,7 +65,7 @@ func TestParser_ParseFromFilename_Integration(t *testing.T) {
 						"X-Message":    types.String("hello"),
 						"X-Var5":       types.Int(1),
 					},
-					Body: utils.Ptr(types.String(`{"var1":1,"var2":"hello","var3":true,"var4":false,"var5":1}`)),
+					Body: types.String(`{"var1":1,"var2":"hello","var3":true,"var4":false,"var5":1}`),
 				},
 			},
 		},
@@ -108,6 +107,29 @@ func TestParser_ParseFromFilename_Integration(t *testing.T) {
 					Query: map[string]interface{}{
 						"id":  types.String("default"),
 						"id2": types.String("default"),
+					},
+				},
+			},
+		},
+		{
+			name: "05_body_map.do",
+			path: "examples/05_body_map.do",
+			expected: &types.DoFile{
+				Let: types.Let{
+					Variables: types.Map{
+						"var1": types.String("param"),
+					},
+				},
+				Do: types.Do{
+					Method: types.String("POST"),
+					URL:    types.String("http://localhost:8080/upload"),
+					Headers: types.Map{
+						"Content-Type": types.String("multipart/form-data"),
+					},
+					Body: types.Map{
+						"key1": types.String("value1"),
+						"key2": types.File{Path: "/path/to/file"},
+						"key3": types.String("param"),
 					},
 				},
 			},
@@ -192,8 +214,23 @@ func TestParser_ParseFromFilename_Integration(t *testing.T) {
 				}
 
 				if doFile.Do.Body != nil && tc.expected.Do.Body != nil {
-					if *doFile.Do.Body != *tc.expected.Do.Body {
-						t.Errorf("expected %v, got %v", *tc.expected.Do.Body, *doFile.Do.Body)
+					switch doFile.Do.Body.(type) {
+					case types.String:
+						if doFile.Do.Body != tc.expected.Do.Body {
+							t.Errorf("expected %v, got %v", tc.expected.Do.Body, doFile.Do.Body)
+						}
+					case types.Map:
+						for k, v := range doFile.Do.Body.(types.Map) {
+							expectedVal, ok := tc.expected.Do.Body.(types.Map)[k]
+							if !ok {
+								t.Errorf("expected %v, got %v", expectedVal, v)
+							}
+
+							if !reflect.DeepEqual(expectedVal, v) {
+								t.Errorf("expected %v, got %v", expectedVal, v)
+								t.Errorf("expected %T, got %T", expectedVal, v)
+							}
+						}
 					}
 				}
 			}
