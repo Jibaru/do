@@ -1,9 +1,12 @@
 package request
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/jibaru/do/internal/types"
@@ -54,8 +57,50 @@ func (h *httpClient) Do(doFile types.DoFile) (*types.Response, error) {
 	req.URL.RawQuery = query.Encode()
 
 	if doFile.Do.Body != nil {
-		body := string(*doFile.Do.Body)
-		req.Body = io.NopCloser(strings.NewReader(body))
+		switch doFile.Do.Body.(type) {
+		case types.String:
+			val := doFile.Do.Body.(types.String)
+			req.Body = io.NopCloser(strings.NewReader(string(val)))
+		case types.Map:
+			// Map equals to multipart/form-data
+			var requestBody bytes.Buffer
+			writer := multipart.NewWriter(&requestBody)
+
+			for key, value := range doFile.Do.Body.(types.Map) {
+				switch value.(type) {
+				case types.String:
+					val := value.(types.String)
+					err = writer.WriteField(key, string(val))
+					if err != nil {
+						return nil, NewCanNotDoRequestError(err)
+					}
+				case types.File:
+					typeFile := value.(types.File)
+
+					file, err := os.Open(typeFile.Path)
+					if err != nil {
+						return nil, NewCanNotDoRequestError(err)
+					}
+					part, err := writer.CreateFormFile(key, file.Name())
+					if err != nil {
+						return nil, NewCanNotDoRequestError(err)
+					}
+
+					_, err = io.Copy(part, file)
+					if err != nil {
+						return nil, NewCanNotDoRequestError(err)
+					}
+				}
+			}
+
+			err = writer.Close()
+			if err != nil {
+				return nil, NewCanNotDoRequestError(err)
+			}
+
+			req.Header.Set("Content-Type", writer.FormDataContentType())
+			req.Body = io.NopCloser(&requestBody)
+		}
 	}
 
 	res, err := h.client.Do(req)
