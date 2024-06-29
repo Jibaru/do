@@ -17,7 +17,8 @@ func (e EmptyArgError) Error() string {
 }
 
 const (
-	EnvFuncName = "env"
+	FileFuncName = "file"
+	EnvFuncName  = "env"
 )
 
 type EnvFunc struct {
@@ -41,11 +42,35 @@ func NewEnvFunc(arg1, arg2 string) (EnvFunc, error) {
 	return EnvFunc{Arg1: arg1, Arg2: arg2}, nil
 }
 
-func (f EnvFunc) Exec() string {
+func (f EnvFunc) Exec() String {
 	val, exists := os.LookupEnv(f.Arg1)
 	if !exists {
-		return f.Arg2
+		return String(f.Arg2)
 	}
 
-	return val
+	return String(val)
+}
+
+type FileFunc struct {
+	Path string
+}
+
+func NewFileFuncFromArgs(args []string) (FileFunc, error) {
+	if len(args) != 1 {
+		return FileFunc{}, errors.New("invalid number of arguments for file")
+	}
+
+	return NewFileFunc(args[0])
+}
+
+func NewFileFunc(path string) (FileFunc, error) {
+	if strings.TrimSpace(path) == "" {
+		return FileFunc{}, EmptyArgError{funcName: "file", position: 1}
+	}
+
+	return FileFunc{Path: path}, nil
+}
+
+func (f FileFunc) Exec() File {
+	return File{Path: f.Path}
 }
