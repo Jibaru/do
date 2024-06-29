@@ -111,10 +111,10 @@ There are another values that only should be accepted in do section:
 
 ### Functions
 
-| Function | Description                                                                 | Example                                      |
-| -------- | --------------------------------------------------------------------------- | -------------------------------------------- |
-| env      | Get an environment variable. If the variable is not found, it returns a default value | env("MY_VAR", "default")|
-| file     | Get a file path. It is used for multipart requests.                        | file("path/to/file.txt")                     |
+| Function | Description                                                                           | Example                  |
+| -------- | ------------------------------------------------------------------------------------- | ------------------------ |
+| env      | Get an environment variable. If the variable is not found, it returns a default value | env("MY_VAR", "default") |
+| file     | Get a file path. It is used for multipart requests.                                   | file("path/to/file.txt") |
 
 ### Do Section
 
@@ -149,7 +149,7 @@ You should use the `variable = value;` format to define a variable with its valu
 ### Fields
 
 | Field   | Type          | Description                                                                             | Required | Example                               |
-| ------- |---------------|-----------------------------------------------------------------------------------------| -------- | ------------------------------------- |
+| ------- | ------------- | --------------------------------------------------------------------------------------- | -------- | ------------------------------------- |
 | method  | string        | The http request method                                                                 | Yes      | "POST"                                |
 | url     | string        | The url to request. It should accept replace params that should be used with `:` + name | Yes      | "https://example.com"                 |
 | params  | map           | The params to replace in the url (without `:`).                                         | No       | {"id": 26}                            |
@@ -181,35 +181,35 @@ The output of the `do` command will be the request + response in a json format.
 
 ```json
 {
-   "do_file": {
-      "let": {
-         "variables": {
-           "token": "token-value"
-         }
+  "do_file": {
+    "let": {
+      "variables": {
+        "token": "token-value"
+      }
+    },
+    "do": {
+      "method": "POST",
+      "url": "https://www.fakepage.com/keys/:id",
+      "params": {
+        "id": 1
       },
-      "do": {
-         "method": "POST",
-         "url": "https://www.fakepage.com/keys/:id",
-         "params": {
-            "id": 1
-         },
-         "query": {
-            "limit": 1
-         },
-         "headers": {
-           "Authorization": "Bearer token-value"
-         },
-         "body": "value"
-      }
-   },
-   "response": {
-      "status_code": 200,
-      "body": "{\"key\": 123}",
+      "query": {
+        "limit": 1
+      },
       "headers": {
-         "Content-Type": "application/json; charset=utf-8",
-      }
-   },
-   "error": null
+        "Authorization": "Bearer token-value"
+      },
+      "body": "value"
+    }
+  },
+  "response": {
+    "status_code": 200,
+    "body": "{\"key\": 123}",
+    "headers": {
+      "Content-Type": "application/json; charset=utf-8"
+    }
+  },
+  "error": null
 }
 ```
 
@@ -228,8 +228,8 @@ You can add support for `.do` files using the following extension:
 ## Roadmap
 
 - [x] Add support for variables
-- [ ] Add support for load env variables
+- [x] Add support for load env variables
 - [ ] Add support for prompt variables
-- [ ] Add support for displaying beauty response
-- [ ] Add support for comments
+- [x] Add support for displaying beauty response
+- [x] Add support for comments
 - [ ] Add support for importing files
