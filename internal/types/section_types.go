@@ -5,6 +5,9 @@ type Int int
 type Float float64
 type Bool bool
 type Map map[string]interface{}
+type File struct {
+	Path string
+}
 
 type ReferenceToVariable struct {
 	Value string
