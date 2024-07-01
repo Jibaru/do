@@ -8,6 +8,7 @@ import (
 	"github.com/jibaru/do/internal/parser/cleaner"
 	"github.com/jibaru/do/internal/parser/extractor"
 	"github.com/jibaru/do/internal/parser/replacer"
+	"github.com/jibaru/do/internal/parser/resolver"
 	"github.com/jibaru/do/internal/reader"
 	"github.com/jibaru/do/internal/types"
 )
@@ -20,16 +21,18 @@ type parser struct {
 	doFileReader      reader.FileReader
 	commentCleaner    cleaner.Cleaner
 	sectionExtractor  extractor.Extractor
-	variablesReplacer replacer.Replacer
+	variablesReplacer replacer.DoReplacer
 	funcCaller        caller.Caller
+	letResolver       resolver.LetResolver
 }
 
 func New(
 	doFileReader reader.FileReader,
 	commentCleaner cleaner.Cleaner,
 	sectionExtractor extractor.Extractor,
-	variablesReplacer replacer.Replacer,
+	variablesReplacer replacer.DoReplacer,
 	funcCaller caller.Caller,
+	letResolver resolver.LetResolver,
 ) Parser {
 	return &parser{
 		doFileReader,
@@ -37,6 +40,7 @@ func New(
 		sectionExtractor,
 		variablesReplacer,
 		funcCaller,
+		letResolver,
 	}
 }
 
@@ -51,38 +55,47 @@ func (p *parser) ParseFromFilename(filename string) (*types.DoFile, error) {
 		return nil, err
 	}
 
-	letVariables, err := p.sectionExtractor.Extract(types.LetSection, cleanedContent)
+	letSentences, err := p.sectionExtractor.Extract(types.LetSection, cleanedContent)
 	if err != nil {
-		if errors.Is(err, extractor.ErrSectionExtractorNoBlock) {
-			letVariables = nil
-		} else {
+		if !errors.Is(err, extractor.ErrSectionExtractorNoBlock) {
 			return nil, err
 		}
 	}
 
-	doVariables, err := p.sectionExtractor.Extract(types.DoSection, cleanedContent)
+	doSentences, err := p.sectionExtractor.Extract(types.DoSection, cleanedContent)
 	if err != nil {
 		return nil, err
 	}
 
-	if doVariables == nil {
+	if doSentences == nil {
 		return nil, NewDoSectionEmptyError()
 	}
 
-	if doVariables[types.DoMethod] == nil {
+	if !doSentences.Has(types.DoMethod) {
 		return nil, NewMethodRequiredError()
 	}
 
-	if doVariables[types.DoURL] == nil {
+	if !doSentences.Has(types.DoURL) {
 		return nil, NewURLRequiredError()
 	}
 
-	err = p.funcCaller.Call(letVariables, doVariables)
+	letSentences, err = p.letResolver.Resolve(letSentences)
 	if err != nil {
 		return nil, err
 	}
 
+	var letVariables map[string]interface{}
+	if letSentences != nil {
+		letVariables = letSentences.ToMap()
+	}
+
+	doVariables := doSentences.ToMap()
 	err = p.variablesReplacer.Replace(doVariables, letVariables)
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.funcCaller.Call(doVariables)
 	if err != nil {
 		return nil, err
 	}
