@@ -13,6 +13,7 @@ import (
 	"github.com/jibaru/do/internal/parser/normalizer"
 	"github.com/jibaru/do/internal/parser/partitioner"
 	"github.com/jibaru/do/internal/parser/replacer"
+	"github.com/jibaru/do/internal/parser/resolver"
 	"github.com/jibaru/do/internal/parser/taker"
 	"github.com/jibaru/do/internal/reader"
 	"github.com/jibaru/do/internal/request"
@@ -37,7 +38,8 @@ func main() {
 	sectionExtractor := extractor.New(sectionTaker, sectionNormalizer, sectionPartitioner, expressionAnalyzer)
 	variablesReplacer := replacer.New()
 	funcCaller := caller.New()
-	theParser := parser.New(doFileReader, commentCleaner, sectionExtractor, variablesReplacer, funcCaller)
+	letResolver := resolver.NewLetResolver()
+	theParser := parser.New(doFileReader, commentCleaner, sectionExtractor, variablesReplacer, funcCaller, letResolver)
 	client := request.NewHttpClient(&http.Client{})
 
 	output := types.CommandLineOutput{}
