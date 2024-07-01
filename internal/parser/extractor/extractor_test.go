@@ -2,6 +2,7 @@ package extractor_test
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/jibaru/do/internal/parser/analyzer"
@@ -17,28 +18,43 @@ func TestExtractor_Extract(t *testing.T) {
 		name          string
 		section       types.Section
 		rawContent    types.CleanedContent
-		expected      map[string]interface{}
+		expected      *types.Sentences
 		expectedError error
 		takeFn        func(section types.Section, text types.CleanedContent) (types.RawSectionContent, error)
 		normalizerFn  func(content types.RawSectionContent) (types.NormalizedSectionContent, error)
 		splitFn       func(content types.NormalizedSectionContent) (types.SectionExpressions, error)
-		analyzeFn     func(expressions types.SectionExpressions) (map[string]interface{}, error)
+		analyzeFn     func(expressions types.SectionExpressions) (*types.Sentences, error)
 	}{
 		{
 			name:       "success do section",
 			section:    types.DoSection,
 			rawContent: "let{}do{method=\"GET\";url=\"https://localhost:8080/api/v1/tests\";params={\"id\":12};headers={\"Authorization\":\"Bearer token\"};body=`{\"extra\":true}`;}",
-			expected: map[string]interface{}{
-				"method": "GET",
-				"url":    "https://localhost:8080/api/v1/tests",
-				"params": map[string]interface{}{
-					"id": float64(12),
+			expected: types.NewSentencesFromSlice([]types.Sentence{
+				{
+					Key:   "method",
+					Value: types.String("GET"),
 				},
-				"headers": map[string]interface{}{
-					"Authorization": "Bearer token",
+				{
+					Key:   "url",
+					Value: types.String("https://localhost:8080/api/v1/tests"),
 				},
-				"body": `{"extra":true}`,
-			},
+				{
+					Key: "params",
+					Value: types.Map{
+						"id": types.Float(12),
+					},
+				},
+				{
+					Key: "headers",
+					Value: types.Map{
+						"Authorization": types.String("Bearer token"),
+					},
+				},
+				{
+					Key:   "body",
+					Value: types.String(`{"extra":true}`),
+				},
+			}),
 			takeFn: func(section types.Section, text types.CleanedContent) (types.RawSectionContent, error) {
 				return "method=\"GET\";url=\"https://localhost:8080/api/v1/tests\";params={\"id\":12};headers={\"Authorization\":\"Bearer token\"};body=`{\"extra\":true}`;", nil
 			},
@@ -54,30 +70,57 @@ func TestExtractor_Extract(t *testing.T) {
 					"body=`{\"extra\":true}`",
 				}, nil
 			},
-			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
-				return map[string]interface{}{
-					"method": "GET",
-					"url":    "https://localhost:8080/api/v1/tests",
-					"params": map[string]interface{}{
-						"id": float64(12),
+			analyzeFn: func(expressions types.SectionExpressions) (*types.Sentences, error) {
+				return types.NewSentencesFromSlice([]types.Sentence{
+					{
+						Key:   "method",
+						Value: types.String("GET"),
 					},
-					"headers": map[string]interface{}{
-						"Authorization": "Bearer token",
+					{
+						Key:   "url",
+						Value: types.String("https://localhost:8080/api/v1/tests"),
 					},
-					"body": `{"extra":true}`,
-				}, nil
+					{
+						Key: "params",
+						Value: types.Map{
+							"id": types.Float(12),
+						},
+					},
+					{
+						Key: "headers",
+						Value: types.Map{
+							"Authorization": types.String("Bearer token"),
+						},
+					},
+					{
+						Key:   "body",
+						Value: types.String(`{"extra":true}`),
+					},
+				}), nil
 			},
 		},
 		{
 			name:       "success let section",
 			section:    types.LetSection,
 			rawContent: `let{var1=12;var2="text";var3=false;var4=12.33;}do{method="GET";url="https://localhost:8080/api/v1/tests"}`,
-			expected: map[string]interface{}{
-				"var1": 12,
-				"var2": "text",
-				"var3": false,
-				"var4": 12.33,
-			},
+			expected: types.NewSentencesFromSlice([]types.Sentence{
+				{
+					Key:   "var1",
+					Value: types.Int(12),
+				},
+				{
+					Key:   "var2",
+					Value: types.String("text"),
+				},
+				{
+					Key:   "var3",
+					Value: types.Bool(false),
+				},
+				{
+					Key:   "var4",
+					Value: types.Float(12.33),
+				},
+			}),
 			takeFn: func(section types.Section, text types.CleanedContent) (types.RawSectionContent, error) {
 				return "var1=12;var2=\"text\";var3=false;var4=12.33;", nil
 			},
@@ -92,13 +135,25 @@ func TestExtractor_Extract(t *testing.T) {
 					"var4=12.33",
 				}, nil
 			},
-			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
-				return map[string]interface{}{
-					"var1": 12,
-					"var2": "text",
-					"var3": false,
-					"var4": 12.33,
-				}, nil
+			analyzeFn: func(expressions types.SectionExpressions) (*types.Sentences, error) {
+				return types.NewSentencesFromSlice([]types.Sentence{
+					{
+						Key:   "var1",
+						Value: types.Int(12),
+					},
+					{
+						Key:   "var2",
+						Value: types.String("text"),
+					},
+					{
+						Key:   "var3",
+						Value: types.Bool(false),
+					},
+					{
+						Key:   "var4",
+						Value: types.Float(12.33),
+					},
+				}), nil
 			},
 		},
 		{
@@ -115,7 +170,7 @@ func TestExtractor_Extract(t *testing.T) {
 			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
 				return nil, nil
 			},
-			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
+			analyzeFn: func(expressions types.SectionExpressions) (*types.Sentences, error) {
 				return nil, nil
 			},
 		},
@@ -133,7 +188,7 @@ func TestExtractor_Extract(t *testing.T) {
 			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
 				return nil, nil
 			},
-			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
+			analyzeFn: func(expressions types.SectionExpressions) (*types.Sentences, error) {
 				return nil, nil
 			},
 		},
@@ -151,7 +206,7 @@ func TestExtractor_Extract(t *testing.T) {
 			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
 				return nil, nil
 			},
-			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
+			analyzeFn: func(expressions types.SectionExpressions) (*types.Sentences, error) {
 				return nil, nil
 			},
 		},
@@ -169,7 +224,7 @@ func TestExtractor_Extract(t *testing.T) {
 			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
 				return nil, nil
 			},
-			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
+			analyzeFn: func(expressions types.SectionExpressions) (*types.Sentences, error) {
 				return nil, nil
 			},
 		},
@@ -187,7 +242,7 @@ func TestExtractor_Extract(t *testing.T) {
 			splitFn: func(content types.NormalizedSectionContent) (types.SectionExpressions, error) {
 				return nil, errors.New("error in splitter")
 			},
-			analyzeFn: func(expressions types.SectionExpressions) (map[string]interface{}, error) {
+			analyzeFn: func(expressions types.SectionExpressions) (*types.Sentences, error) {
 				return nil, nil
 			},
 		},
@@ -199,11 +254,6 @@ func TestExtractor_Extract(t *testing.T) {
 	takerMock := &taker.Mock{}
 	sectionExtractor := extractor.New(takerMock, normalizerMock, partitionerMock, analyzerMock)
 
-	isMap := func(i interface{}) bool {
-		_, ok := i.(map[string]interface{})
-		return ok
-	}
-
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			takerMock.TakeFn = tc.takeFn
@@ -213,24 +263,27 @@ func TestExtractor_Extract(t *testing.T) {
 
 			result, err := sectionExtractor.Extract(tc.section, tc.rawContent)
 
-			if err != nil && ((tc.expectedError == nil) || (err.Error() != tc.expectedError.Error())) {
+			if err != nil && tc.expectedError == nil {
+				t.Errorf("expected no error, got %v", err)
+			} else if err == nil && tc.expectedError != nil {
+				t.Errorf("expected error %v, got no error", tc.expectedError)
+			} else if err != nil && tc.expectedError != nil && err.Error() != tc.expectedError.Error() {
 				t.Errorf("expected error %v, got %v", tc.expectedError, err)
 			}
 
-			for key, value := range tc.expected {
-				if isMap(result[key]) && isMap(value) {
-					for k, v := range value.(map[string]interface{}) {
-						if result[key].(map[string]interface{})[k] != v {
-							t.Errorf("expected %v, got %v", v, result[key].(map[string]interface{})[k])
-							t.Errorf("expected %T, got %T", v, result[key].(map[string]interface{})[k])
-						}
-					}
-					continue
-				}
+			if tc.expected == nil {
+				return
+			}
 
-				if result[key] != value {
-					t.Errorf("expected %v, got %v", value, result[key])
-					t.Errorf("expected %T, got %T", value, result[key])
+			for _, entry := range tc.expected.Entries() {
+				key := entry.Key
+				value := entry.Value
+
+				expected, _ := result.Get(key)
+
+				if !reflect.DeepEqual(value, expected) {
+					t.Errorf("expected %v, got %v", value, expected)
+					t.Errorf("expected %T, got %T", value, expected)
 				}
 			}
 		})

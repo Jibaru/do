@@ -15,7 +15,7 @@ var (
 )
 
 type Extractor interface {
-	Extract(section types.Section, rawContent types.CleanedContent) (map[string]interface{}, error)
+	Extract(section types.Section, rawContent types.CleanedContent) (*types.Sentences, error)
 }
 
 type SectionExtractor struct {
@@ -39,7 +39,7 @@ func New(
 	}
 }
 
-func (d *SectionExtractor) Extract(section types.Section, rawContent types.CleanedContent) (map[string]interface{}, error) {
+func (d *SectionExtractor) Extract(section types.Section, rawContent types.CleanedContent) (*types.Sentences, error) {
 	content, err := d.sectionTaker.Take(section, rawContent)
 	if err != nil && errors.Is(err, taker.NoBlockError{}) {
 		return nil, ErrSectionExtractorNoBlock

@@ -5,9 +5,9 @@ import (
 )
 
 type Mock struct {
-	ExtractFn func(section types.Section, content types.CleanedContent) (map[string]interface{}, error)
+	ExtractFn func(section types.Section, content types.CleanedContent) (*types.Sentences, error)
 }
 
-func (m *Mock) Extract(section types.Section, content types.CleanedContent) (map[string]interface{}, error) {
+func (m *Mock) Extract(section types.Section, content types.CleanedContent) (*types.Sentences, error) {
 	return m.ExtractFn(section, content)
 }
