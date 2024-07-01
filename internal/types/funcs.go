@@ -21,21 +21,77 @@ const (
 	EnvFuncName  = "env"
 )
 
-type EnvFunc struct {
-	Arg1 string
-	Arg2 string
+type Func struct {
+	Name string
+	Args []interface{}
 }
 
-func NewEnvFuncFromArgs(args []string) (EnvFunc, error) {
+func NewFunc(name string, args []interface{}) (Func, error) {
+	for i, arg := range args {
+		switch arg.(type) {
+		case Map:
+			return Func{}, errors.New("map not allowed as argument for argument " + fmt.Sprintf("%v", i+1))
+		}
+	}
+
+	return Func{Name: name, Args: args}, nil
+}
+
+func (f Func) HasReferences() bool {
+	for _, arg := range f.Args {
+		switch arg.(type) {
+		case ReferenceToVariable:
+			return true
+		case Func:
+			if arg.(Func).HasReferences() {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func (f Func) Resolve() (interface{}, error) {
+	switch f.Name {
+	case FileFuncName:
+		return NewFileFuncFromArgs(f.Args)
+	case EnvFuncName:
+		return NewEnvFuncFromArgs(f.Args)
+	}
+
+	return nil, errors.New("unknown function")
+}
+
+type EnvFunc struct {
+	Arg1 String
+	Arg2 String
+}
+
+func NewEnvFuncFromArgs(args []interface{}) (EnvFunc, error) {
 	if len(args) < 1 || len(args) > 2 {
 		return EnvFunc{}, errors.New("invalid number of arguments for env")
 	}
 
-	return NewEnvFunc(args[0], args[1])
+	arg, ok := args[0].(String)
+	if !ok {
+		return EnvFunc{}, errors.New("invalid argument type for env")
+	}
+
+	if len(args) == 1 {
+		return NewEnvFunc(arg, "")
+	}
+
+	arg2, ok := args[1].(String)
+	if !ok {
+		return EnvFunc{}, errors.New("invalid argument type for env")
+	}
+
+	return NewEnvFunc(arg, arg2)
 }
 
-func NewEnvFunc(arg1, arg2 string) (EnvFunc, error) {
-	if strings.TrimSpace(arg1) == "" {
+func NewEnvFunc(arg1, arg2 String) (EnvFunc, error) {
+	if strings.TrimSpace(string(arg1)) == "" {
 		return EnvFunc{}, EmptyArgError{funcName: EnvFuncName, position: 1}
 	}
 
@@ -43,7 +99,7 @@ func NewEnvFunc(arg1, arg2 string) (EnvFunc, error) {
 }
 
 func (f EnvFunc) Exec() String {
-	val, exists := os.LookupEnv(f.Arg1)
+	val, exists := os.LookupEnv(string(f.Arg1))
 	if !exists {
 		return String(f.Arg2)
 	}
@@ -52,19 +108,24 @@ func (f EnvFunc) Exec() String {
 }
 
 type FileFunc struct {
-	Path string
+	Path String
 }
 
-func NewFileFuncFromArgs(args []string) (FileFunc, error) {
+func NewFileFuncFromArgs(args []interface{}) (FileFunc, error) {
 	if len(args) != 1 {
 		return FileFunc{}, errors.New("invalid number of arguments for file")
 	}
 
-	return NewFileFunc(args[0])
+	arg, ok := args[0].(String)
+	if !ok {
+		return FileFunc{}, errors.New("invalid argument type for file")
+	}
+
+	return NewFileFunc(arg)
 }
 
-func NewFileFunc(path string) (FileFunc, error) {
-	if strings.TrimSpace(path) == "" {
+func NewFileFunc(path String) (FileFunc, error) {
+	if strings.TrimSpace(string(path)) == "" {
 		return FileFunc{}, EmptyArgError{funcName: "file", position: 1}
 	}
 
@@ -72,5 +133,5 @@ func NewFileFunc(path string) (FileFunc, error) {
 }
 
 func (f FileFunc) Exec() File {
-	return File{Path: f.Path}
+	return File{Path: string(f.Path)}
 }
