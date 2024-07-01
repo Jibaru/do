@@ -10,7 +10,7 @@ import (
 )
 
 type Analyzer interface {
-	Analyze(expressions types.SectionExpressions) (map[string]interface{}, error)
+	Analyze(expressions types.SectionExpressions) (*types.Sentences, error)
 }
 
 type analyzer struct{}
@@ -19,8 +19,8 @@ func New() Analyzer {
 	return &analyzer{}
 }
 
-func (a *analyzer) Analyze(expressions types.SectionExpressions) (map[string]interface{}, error) {
-	result := make(map[string]interface{})
+func (a *analyzer) Analyze(expressions types.SectionExpressions) (*types.Sentences, error) {
+	result := types.NewSentences()
 
 	for _, line := range expressions {
 		parts := strings.SplitN(line, "=", 2)
@@ -35,41 +35,41 @@ func (a *analyzer) Analyze(expressions types.SectionExpressions) (map[string]int
 			return nil, NewReservedKeywordError(key)
 		}
 
-		if _, ok := result[key]; ok {
+		if result.Has(key) {
 			return nil, NewRepeatedKeyError(key)
 		}
 
 		if isStringByQuotes(value) {
 			// if value is a string
-			result[key] = types.String(strings.Trim(value, `"`))
+			result.Set(key, types.String(strings.Trim(value, `"`)))
 		} else if isStringByBackticks(value) {
 			// if value is a string
-			result[key] = types.String(strings.Trim(value, "`"))
+			result.Set(key, types.String(strings.Trim(value, "`")))
 		} else if isMap(value) {
 			// if value is a map
 			mp, err := toMap(value)
 			if err != nil {
 				return nil, err
 			}
-			result[key] = mp
+			result.Set(key, mp)
 		} else if isBool(value) {
 			// if value is a boolean
 			b, _ := strconv.ParseBool(value)
-			result[key] = types.Bool(b)
+			result.Set(key, types.Bool(b))
 		} else if num, ok := isInt(value); ok {
 			// if value is an integer
-			result[key] = types.Int(num)
+			result.Set(key, types.Int(num))
 		} else if floatNum, isOk := isFloat(value); isOk {
 			// if value is a number
-			result[key] = types.Float(floatNum)
+			result.Set(key, types.Float(floatNum))
 		} else if isReferenceToVariable(value) {
-			result[key] = types.NewReferenceToVariable(value)
+			result.Set(key, types.NewReferenceToVariable(value))
 		} else if isFunc(value) {
 			funcVal, err := toFunc(value)
 			if err != nil {
 				return nil, err
 			}
-			result[key] = funcVal
+			result.Set(key, funcVal)
 		} else {
 			return nil, NewInvalidValueError(value)
 		}
@@ -191,12 +191,12 @@ func isReferenceToVariable(value string) bool {
 	return true
 }
 
-func toFunc(value string) (interface{}, error) {
+func toFunc(value string) (types.Func, error) {
 	re := regexp.MustCompile(`^(\w+)\(([^)]*)\)$`)
 	matches := re.FindStringSubmatch(value)
 
 	if matches == nil || len(matches) < 2 {
-		return nil, ReadingExpressionError{parts: matches}
+		return types.Func{}, ReadingExpressionError{parts: matches}
 	}
 
 	funcName := matches[1]
@@ -207,12 +207,10 @@ func toFunc(value string) (interface{}, error) {
 		args[i] = strings.Trim(args[i], `"`)
 	}
 
-	switch funcName {
-	case types.EnvFuncName:
-		return types.NewEnvFuncFromArgs(args)
-	case types.FileFuncName:
-		return types.NewFileFuncFromArgs(args)
-	default:
-		return nil, NewInvalidValueError(value)
+	var funcArgs []interface{}
+	for _, arg := range args {
+		funcArgs = append(funcArgs, types.String(arg))
 	}
+
+	return types.NewFunc(funcName, funcArgs)
 }

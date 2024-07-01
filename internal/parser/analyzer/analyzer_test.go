@@ -13,7 +13,7 @@ func TestAnalyzer_Analyze(t *testing.T) {
 	testCases := []struct {
 		name          string
 		expressions   types.SectionExpressions
-		expected      map[string]interface{}
+		expected      *types.Sentences
 		expectedError error
 	}{
 		{
@@ -32,31 +32,67 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				"var11=env(\"OS_VAR\", \"default\")",
 				"var12=file(\"/path/to/file\")",
 			},
-			expected: map[string]interface{}{
-				"var1": types.Int(1),
-				"var2": types.String("hello"),
-				"var3": types.Bool(true),
-				"var4": types.Float(20.3),
-				"var5": types.Int(-12),
-				"var6": types.Map{
-					"key1": types.Int(1),
-					"key2": types.String("hello"),
-					"key3": types.Map{
-						"a": types.ReferenceToVariable{Value: "x"},
-					},
-					"key4": types.Bool(true),
-					"key5": types.Float(20.3),
-					"key6": types.Int(-12),
-					"key7": types.ReferenceToVariable{Value: "x"},
-					"key8": types.String("backticks"),
+			expected: types.NewSentencesFromSlice([]types.Sentence{
+				{
+					Key:   "var1",
+					Value: types.Int(1),
 				},
-				"var7":  types.String("something here"),
-				"var8":  types.String("=string=with=another="),
-				"var9":  types.ReferenceToVariable{Value: "x"},
-				"var10": types.ReferenceToVariable{Value: "_y"},
-				"var11": types.EnvFunc{Arg1: "OS_VAR", Arg2: "default"},
-				"var12": types.FileFunc{Path: "/path/to/file"},
-			},
+				{
+					Key:   "var2",
+					Value: types.String("hello"),
+				},
+				{
+					Key:   "var3",
+					Value: types.Bool(true),
+				},
+				{
+					Key:   "var4",
+					Value: types.Float(20.3),
+				},
+				{
+					Key:   "var5",
+					Value: types.Int(-12),
+				},
+				{
+					Key: "var6",
+					Value: types.Map{
+						"key1": types.Int(1),
+						"key2": types.String("hello"),
+						"key3": types.Map{
+							"a": types.ReferenceToVariable{Value: "x"},
+						},
+						"key4": types.Bool(true),
+						"key5": types.Float(20.3),
+						"key6": types.Int(-12),
+						"key7": types.ReferenceToVariable{Value: "x"},
+						"key8": types.String("backticks"),
+					},
+				},
+				{
+					Key:   "var7",
+					Value: types.String("something here"),
+				},
+				{
+					Key:   "var8",
+					Value: types.String("=string=with=another="),
+				},
+				{
+					Key:   "var9",
+					Value: types.ReferenceToVariable{Value: "x"},
+				},
+				{
+					Key:   "var10",
+					Value: types.ReferenceToVariable{Value: "_y"},
+				},
+				{
+					Key:   "var11",
+					Value: types.Func{Name: "env", Args: []interface{}{types.String("OS_VAR"), types.String("default")}},
+				},
+				{
+					Key:   "var12",
+					Value: types.Func{Name: "file", Args: []interface{}{types.String("/path/to/file")}},
+				},
+			}),
 		},
 		/*{
 			// TODO: make sure this test is passing
@@ -142,10 +178,19 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				t.Errorf("expected error %v, got %v", tc.expectedError, err)
 			}
 
-			for key, value := range tc.expected {
-				if !reflect.DeepEqual(value, result[key]) {
-					t.Errorf("expected %v, got %v", value, result[key])
-					t.Errorf("expected %T, got %T", value, result[key])
+			if tc.expected == nil {
+				return
+			}
+
+			for _, entry := range tc.expected.Entries() {
+				key := entry.Key
+				value := entry.Value
+
+				expected, _ := result.Get(key)
+
+				if !reflect.DeepEqual(value, expected) {
+					t.Errorf("expected %v, got %v", value, expected)
+					t.Errorf("expected %T, got %T", value, expected)
 				}
 			}
 		})
