@@ -21,13 +21,31 @@ func NewReferenceToVariable(value string) ReferenceToVariable {
 func (m Map) HasBasicTypesValues() bool {
 	for _, v := range m {
 		switch v.(type) {
-		case String, Bool, Int, Float:
+		case String, Bool, Int, Float, File:
 			continue
 		default:
 			return false
 		}
 	}
 	return true
+}
+
+func (m Map) HasReferences() bool {
+	for _, v := range m {
+		switch v.(type) {
+		case ReferenceToVariable:
+			return true
+		case Map:
+			if v.(Map).HasReferences() {
+				return true
+			}
+		case Func:
+			if v.(Func).HasReferences() {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // HasStringValues returns true if all values in the map are strings
