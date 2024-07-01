@@ -1,9 +1,13 @@
 package caller
 
-import "github.com/jibaru/do/internal/types"
+import (
+	"errors"
+
+	"github.com/jibaru/do/internal/types"
+)
 
 type Caller interface {
-	Call(letVariables map[string]interface{}, doVariables map[string]interface{}) error
+	Call(variables map[string]interface{}) error
 }
 
 type caller struct {
@@ -13,26 +17,29 @@ func New() Caller {
 	return &caller{}
 }
 
-func (c *caller) Call(letVariables map[string]interface{}, doVariables map[string]interface{}) error {
-	for name, value := range letVariables {
+func (c *caller) Call(variables map[string]interface{}) error {
+	for name, value := range variables {
 		switch value.(type) {
-		case types.EnvFunc:
-			envFunc := value.(types.EnvFunc)
-			letVariables[name] = envFunc.Exec()
-		case types.FileFunc:
-			fileFunc := value.(types.FileFunc)
-			letVariables[name] = fileFunc.Exec()
-		}
-	}
+		case types.Func:
+			fn := value.(types.Func)
 
-	for name, value := range doVariables {
-		switch value.(type) {
-		case types.EnvFunc:
-			envFunc := value.(types.EnvFunc)
-			doVariables[name] = envFunc.Exec()
-		case types.FileFunc:
-			fileFunc := value.(types.FileFunc)
-			doVariables[name] = fileFunc.Exec()
+			if fn.HasReferences() {
+				return errors.New("function for key " + name + " has references")
+			}
+
+			resolvedFn, err := fn.Resolve()
+			if err != nil {
+				return err
+			}
+
+			switch resolvedFn.(type) {
+			case types.EnvFunc:
+				envFunc := resolvedFn.(types.EnvFunc)
+				variables[name] = envFunc.Exec()
+			case types.FileFunc:
+				fileFunc := resolvedFn.(types.FileFunc)
+				variables[name] = fileFunc.Exec()
+			}
 		}
 	}
 
