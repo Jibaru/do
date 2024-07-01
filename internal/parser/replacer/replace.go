@@ -7,51 +7,26 @@ import (
 	"github.com/jibaru/do/internal/types"
 )
 
-type Replacer interface {
-	Replace(doVariables map[string]interface{}, letVariables map[string]interface{}) error
+type DoReplacer interface {
+	// Replace replaces the variables in the do section from the let section
+	Replace(doVariables map[string]interface{}, letVariables types.Map) error
 }
 
 type replacer struct{}
 
-func New() Replacer {
+func New() DoReplacer {
 	return &replacer{}
 }
 
-func (v *replacer) Replace(doVariables map[string]interface{}, letVariables map[string]interface{}) error {
-	err := v.replaceVariablesInLetSection(letVariables)
-	if err != nil {
-		return err
+func (v *replacer) Replace(doVariables map[string]interface{}, letVariables types.Map) error {
+	if letVariables != nil && !letVariables.HasBasicTypesValues() {
+		return NewInvalidLetVariablesError()
 	}
 
 	return v.replaceVariablesInDoSection(doVariables, letVariables)
 }
 
-func (v *replacer) replaceVariablesInLetSection(letVariables map[string]interface{}) error {
-	variablesWithoutReferences := make(map[string]interface{})
-
-	for key, value := range letVariables {
-		switch val := value.(type) {
-		case types.ReferenceToVariable:
-			continue
-		default:
-			variablesWithoutReferences[key] = val
-		}
-	}
-
-	for key, value := range letVariables {
-		switch val := value.(type) {
-		case types.ReferenceToVariable:
-			if _, ok := variablesWithoutReferences[val.Value]; !ok {
-				return NewReferenceToVariableNotFoundError(key, val.Value)
-			}
-			letVariables[key] = variablesWithoutReferences[val.Value]
-		}
-	}
-
-	return nil
-}
-
-func (v *replacer) replaceVariablesInDoSection(doVariables map[string]interface{}, letVariables map[string]interface{}) error {
+func (v *replacer) replaceVariablesInDoSection(doVariables map[string]interface{}, letVariables types.Map) error {
 	if letVariables == nil {
 		return nil
 	}

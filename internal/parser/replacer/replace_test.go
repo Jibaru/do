@@ -12,7 +12,7 @@ func TestVariablesReplacer_Replace(t *testing.T) {
 	testCases := []struct {
 		name          string
 		doVariables   map[string]interface{}
-		letVariables  map[string]interface{}
+		letVariables  types.Map
 		expected      map[string]interface{}
 		expectedError error
 	}{
@@ -30,12 +30,12 @@ func TestVariablesReplacer_Replace(t *testing.T) {
 				},
 				"body": types.String(`{"extra": $extra}`),
 			},
-			letVariables: map[string]interface{}{
+			letVariables: types.Map{
 				"id":    types.String("123"),
 				"isOk":  types.Bool(true),
 				"token": types.String("random123"),
 				"extra": types.Int(902),
-				"other": types.NewReferenceToVariable("extra"),
+				"other": types.Int(902),
 			},
 			expected: map[string]interface{}{
 				"method": types.String("GET"),
@@ -79,7 +79,7 @@ func TestVariablesReplacer_Replace(t *testing.T) {
 		{
 			name:        "success no do variables",
 			doVariables: nil,
-			letVariables: map[string]interface{}{
+			letVariables: types.Map{
 				"id":    types.String("123"),
 				"isOk":  types.Bool(true),
 				"token": types.String("random123"),
@@ -99,7 +99,7 @@ func TestVariablesReplacer_Replace(t *testing.T) {
 				},
 				"body": types.String(`{"extra": 902}`),
 			},
-			letVariables: map[string]interface{}{
+			letVariables: types.Map{
 				"id":    types.String("123"),
 				"isOk":  types.Bool(true),
 				"token": types.String("random123"),
@@ -118,17 +118,21 @@ func TestVariablesReplacer_Replace(t *testing.T) {
 			},
 		},
 		{
-			name: "error reference to variable not found in let section",
-			letVariables: map[string]interface{}{
-				"var1": types.String("123"),
-				"var2": types.NewReferenceToVariable("var3"),
+			name:        "error invalid let variables",
+			doVariables: map[string]interface{}{},
+			letVariables: types.Map{
+				"id": types.Map{"id": "123"},
+				"func": types.EnvFunc{
+					Arg1: "TEST_1",
+					Arg2: "DEFAULT",
+				},
+				"reference": types.NewReferenceToVariable("id"),
 			},
-			doVariables:   map[string]interface{}{},
-			expectedError: errors.New("reference to variable for key var2 not found: var3"),
+			expectedError: errors.New("let variables must have basic types values"),
 		},
 		{
 			name: "error reference to variable not found in do section",
-			letVariables: map[string]interface{}{
+			letVariables: types.Map{
 				"var1": types.String("123"),
 			},
 			doVariables: map[string]interface{}{
@@ -138,7 +142,7 @@ func TestVariablesReplacer_Replace(t *testing.T) {
 		},
 		{
 			name: "error reference to variable not found in do section nested map",
-			letVariables: map[string]interface{}{
+			letVariables: types.Map{
 				"var1": types.String("123"),
 			},
 			doVariables: map[string]interface{}{
