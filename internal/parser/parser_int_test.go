@@ -13,6 +13,7 @@ import (
 	"github.com/jibaru/do/internal/parser/normalizer"
 	"github.com/jibaru/do/internal/parser/partitioner"
 	"github.com/jibaru/do/internal/parser/replacer"
+	"github.com/jibaru/do/internal/parser/resolver"
 	"github.com/jibaru/do/internal/parser/taker"
 	"github.com/jibaru/do/internal/reader"
 	"github.com/jibaru/do/internal/types"
@@ -91,7 +92,7 @@ func TestParser_ParseFromFilename_Integration(t *testing.T) {
 			setup: func(t *testing.T) {
 				err := os.Setenv("ALREADY_EXIST", "already_exist")
 				if err != nil {
-
+					t.Errorf("expected no error, got %v", err)
 				}
 			},
 			expected: &types.DoFile{
@@ -134,6 +135,27 @@ func TestParser_ParseFromFilename_Integration(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "06_complex_calls_references.do",
+			path: "examples/06_complex_calls_references.do",
+			expected: &types.DoFile{
+				Let: types.Let{
+					Variables: types.Map{
+						"var1": types.String("ANOTHER_VAR_VAL"),
+						"var2": types.String("default2"),
+						"var3": types.String("default2"),
+						"var4": types.String("default2"),
+					},
+				},
+				Do: types.Do{
+					Method: types.String("POST"),
+					URL:    types.String("http://example.com"),
+					Headers: types.Map{
+						"Content-Type": types.String("application/json"),
+					},
+				},
+			},
+		},
 	}
 
 	doFileReader := reader.NewFileReader()
@@ -145,7 +167,8 @@ func TestParser_ParseFromFilename_Integration(t *testing.T) {
 	sectionExtractor := extractor.New(sectionTaker, sectionNormalizer, sectionPartitioner, expressionAnalyzer)
 	variablesReplacer := replacer.New()
 	funcCaller := caller.New()
-	theParser := parser.New(doFileReader, commentCleaner, sectionExtractor, variablesReplacer, funcCaller)
+	letResolver := resolver.NewLetResolver()
+	theParser := parser.New(doFileReader, commentCleaner, sectionExtractor, variablesReplacer, funcCaller, letResolver)
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
