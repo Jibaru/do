@@ -1,10 +1,12 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
 
+	"github.com/jibaru/do/internal/env"
 	"github.com/jibaru/do/internal/parser"
 	"github.com/jibaru/do/internal/parser/analyzer"
 	"github.com/jibaru/do/internal/parser/caller"
@@ -21,13 +23,36 @@ import (
 	"github.com/jibaru/do/internal/utils"
 )
 
+const Version = "v0.0.0"
+
+type params struct {
+	versionFlag bool
+	envPath     string
+	filename    string
+}
+
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("use: do <filename.do>")
+	output := types.CommandLineOutput{}
+	p, err := readParams()
+	if err != nil {
+		output.Error = utils.Ptr(err.Error())
+		fmt.Println(output.MarshalIndent())
 		return
 	}
 
-	filename := os.Args[1]
+	if p.versionFlag {
+		fmt.Println(Version)
+		return
+	}
+
+	if p.envPath != "" {
+		err = env.ParseAndSet(p.envPath)
+		if err != nil {
+			output.Error = utils.Ptr(err.Error())
+			fmt.Println(output.MarshalIndent())
+			return
+		}
+	}
 
 	doFileReader := reader.NewFileReader()
 	commentCleaner := cleaner.New()
@@ -42,9 +67,7 @@ func main() {
 	theParser := parser.New(doFileReader, commentCleaner, sectionExtractor, variablesReplacer, funcCaller, letResolver)
 	client := request.NewHttpClient(&http.Client{})
 
-	output := types.CommandLineOutput{}
-
-	doFile, err := theParser.ParseFromFilename(filename)
+	doFile, err := theParser.ParseFromFilename(p.filename)
 	if err != nil {
 		output.Error = utils.Ptr(err.Error())
 		fmt.Println(output.MarshalIndent())
@@ -62,4 +85,41 @@ func main() {
 
 	output.Response = response
 	fmt.Println(output.MarshalIndent())
+}
+
+func readParams() (params, error) {
+	p := params{}
+
+	envPath := flag.String("env", "", "Path to the env file (optional)")
+	versionFlag := flag.Bool("version", false, "Version of the tool (optional)")
+
+	if len(os.Args) == 2 && (os.Args[1] == "-version" || os.Args[1] == "--version") {
+		err := flag.CommandLine.Parse(os.Args[1:])
+		if err != nil {
+			return p, err
+		}
+
+		p.versionFlag = *versionFlag
+		return p, nil
+	}
+
+	err := flag.CommandLine.Parse(os.Args[2:])
+	if err != nil {
+		return p, err
+	}
+
+	if *versionFlag {
+		p.versionFlag = true
+		return p, nil
+	}
+
+	if len(os.Args) < 2 {
+		return p, fmt.Errorf("use: do <filename.do> [-env <env-file>]")
+	}
+
+	p.versionFlag = *versionFlag
+	p.envPath = *envPath
+	p.filename = os.Args[1]
+
+	return p, nil
 }
