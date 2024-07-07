@@ -40,7 +40,13 @@ move %USERPROFILE%\go\bin\do.exe %USERPROFILE%\go\bin\dohttp.exe
 Execute your `filename.do` files:
 
 ```
-do filename.do
+do -f path/to/do/file
+```
+
+You can include env variables to use in your `.do` files:
+
+```
+do -f path/to/do/file -e path/to/env/file
 ```
 
 ## Example
@@ -219,17 +225,15 @@ The `error` shows the error if parsing the .do file or executing the request fai
 
 If you want to use the response into another program, make sure validate error is null before trying to parse the response and request.
 
+## Flags
+
+- `-f` or `-file`: The file path to execute.
+- `-v` or `-version`: Show the version of the program.
+- `-h` or `-help`: Show the help message.
+- `-e` or `-env`: Set the environment variables using a file path that contains the variables.
+
 ## VS-Code do language support
 
 You can add support for `.do` files using the following extension:
 
 [Download Do Language Support Visual Studio Code Extension](https://marketplace.visualstudio.com/items?itemName=jibaru.do-language-support)
-
-## Roadmap
-
-- [x] Add support for variables
-- [x] Add support for load env variables
-- [ ] Add support for prompt variables
-- [x] Add support for displaying beauty response
-- [x] Add support for comments
-- [ ] Add support for importing files
