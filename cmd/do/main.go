@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/jibaru/do/internal/env"
 	"github.com/jibaru/do/internal/parser"
@@ -88,38 +87,18 @@ func main() {
 }
 
 func readParams() (params, error) {
-	p := params{}
+	var p params
 
-	envPath := flag.String("env", "", "Path to the env file (optional)")
-	versionFlag := flag.Bool("version", false, "Version of the tool (optional)")
+	flag.BoolVar(&p.versionFlag, "version", false, "Version of the tool")
+	flag.BoolVar(&p.versionFlag, "v", false, "Version of the tool")
 
-	if len(os.Args) == 2 && (os.Args[1] == "-version" || os.Args[1] == "--version") {
-		err := flag.CommandLine.Parse(os.Args[1:])
-		if err != nil {
-			return p, err
-		}
+	flag.StringVar(&p.filename, "file", "", "Path to the do file (required)")
+	flag.StringVar(&p.filename, "f", "", "Path to the do file (required)")
 
-		p.versionFlag = *versionFlag
-		return p, nil
-	}
+	flag.StringVar(&p.envPath, "env", "", "Path to the env file (optional)")
+	flag.StringVar(&p.envPath, "e", "", "Path to the env file (optional)")
 
-	err := flag.CommandLine.Parse(os.Args[2:])
-	if err != nil {
-		return p, err
-	}
-
-	if *versionFlag {
-		p.versionFlag = true
-		return p, nil
-	}
-
-	if len(os.Args) < 2 {
-		return p, fmt.Errorf("use: do <filename.do> [-env <env-file>]")
-	}
-
-	p.versionFlag = *versionFlag
-	p.envPath = *envPath
-	p.filename = os.Args[1]
+	flag.Parse()
 
 	return p, nil
 }
