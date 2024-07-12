@@ -22,7 +22,7 @@ import (
 	"github.com/jibaru/do/internal/utils"
 )
 
-const Version = "v1.0.0-alpha.1"
+const Version = "v1.0.0-alpha.2"
 
 type params struct {
 	versionFlag bool
