@@ -104,7 +104,9 @@ func isFunc(value string) bool {
 	}
 
 	return matches[1] == types.EnvFuncName ||
-		matches[1] == types.FileFuncName
+		matches[1] == types.FileFuncName ||
+		matches[1] == types.UuidFuncName ||
+		matches[1] == types.DateFuncName
 }
 
 func isBool(value string) bool {
@@ -200,11 +202,15 @@ func toFunc(value string) (types.Func, error) {
 	}
 
 	funcName := matches[1]
-	args := strings.Split(matches[2], ",")
+	var args []string
+	if strings.TrimSpace(matches[2]) != "" {
+		// not empty args
+		args = strings.Split(matches[2], ",")
 
-	for i := range args {
-		args[i] = strings.TrimSpace(args[i])
-		args[i] = strings.Trim(args[i], `"`)
+		for i := range args {
+			args[i] = strings.TrimSpace(args[i])
+			args[i] = strings.Trim(args[i], `"`)
+		}
 	}
 
 	var funcArgs []interface{}

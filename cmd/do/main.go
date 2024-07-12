@@ -53,6 +53,9 @@ func main() {
 		}
 	}
 
+	uuidFactory := utils.NewRandomUuidFactory()
+	dateFactory := utils.NewNowDateFactory()
+
 	doFileReader := reader.NewFileReader()
 	commentCleaner := cleaner.New()
 	sectionTaker := taker.New()
@@ -61,8 +64,8 @@ func main() {
 	expressionAnalyzer := analyzer.New()
 	sectionExtractor := extractor.New(sectionTaker, sectionNormalizer, sectionPartitioner, expressionAnalyzer)
 	variablesReplacer := replacer.New()
-	funcCaller := caller.New()
-	letResolver := resolver.NewLetResolver()
+	funcCaller := caller.New(uuidFactory, dateFactory)
+	letResolver := resolver.NewLetResolver(uuidFactory, dateFactory)
 	theParser := parser.New(doFileReader, commentCleaner, sectionExtractor, variablesReplacer, funcCaller, letResolver)
 	client := request.NewHttpClient(&http.Client{})
 

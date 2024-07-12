@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/jibaru/do/internal/types"
+	"github.com/jibaru/do/internal/utils"
 )
 
 type Caller interface {
@@ -11,10 +12,18 @@ type Caller interface {
 }
 
 type caller struct {
+	uuidFactory utils.UuidFactory
+	dateFactory utils.DateFactory
 }
 
-func New() Caller {
-	return &caller{}
+func New(
+	uuidFactory utils.UuidFactory,
+	dateFactory utils.DateFactory,
+) Caller {
+	return &caller{
+		uuidFactory,
+		dateFactory,
+	}
 }
 
 func (c *caller) Call(variables map[string]interface{}) error {
@@ -27,7 +36,10 @@ func (c *caller) Call(variables map[string]interface{}) error {
 				return errors.New("function for key " + name + " has references")
 			}
 
-			resolvedFn, err := fn.Resolve()
+			resolvedFn, err := fn.Resolve(
+				c.uuidFactory,
+				c.dateFactory,
+			)
 			if err != nil {
 				return err
 			}
@@ -39,6 +51,12 @@ func (c *caller) Call(variables map[string]interface{}) error {
 			case types.FileFunc:
 				fileFunc := resolvedFn.(types.FileFunc)
 				variables[name] = fileFunc.Exec()
+			case types.UuidFunc:
+				uuidFunc := resolvedFn.(types.UuidFunc)
+				variables[name] = uuidFunc.Exec()
+			case types.DateFunc:
+				dateFunc := resolvedFn.(types.DateFunc)
+				variables[name] = dateFunc.Exec()
 			}
 		}
 	}

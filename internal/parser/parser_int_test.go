@@ -4,6 +4,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/jibaru/do/internal/parser"
 	"github.com/jibaru/do/internal/parser/analyzer"
@@ -17,9 +18,13 @@ import (
 	"github.com/jibaru/do/internal/parser/taker"
 	"github.com/jibaru/do/internal/reader"
 	"github.com/jibaru/do/internal/types"
+	"github.com/jibaru/do/internal/utils"
 )
 
 func TestParser_ParseFromFilename_Integration(t *testing.T) {
+	uuid := "80aaa8e2-e2b9-4bd5-8124-4003d4a528df"
+	now := time.Now()
+
 	testCases := []struct {
 		name     string
 		path     string
@@ -100,6 +105,8 @@ func TestParser_ParseFromFilename_Integration(t *testing.T) {
 					Variables: map[string]interface{}{
 						"var1": types.String("default"),
 						"path": types.String("already_exist"),
+						"var2": types.String(uuid),
+						"var3": types.String(now.Format(time.RFC3339)),
 					},
 				},
 				Do: types.Do{
@@ -158,6 +165,9 @@ func TestParser_ParseFromFilename_Integration(t *testing.T) {
 		},
 	}
 
+	uuidFactory := utils.NewFixedUuidFactory(uuid)
+	dateFactory := utils.NewFixedDateFactory(now)
+
 	doFileReader := reader.NewFileReader()
 	commentCleaner := cleaner.New()
 	sectionTaker := taker.New()
@@ -166,8 +176,8 @@ func TestParser_ParseFromFilename_Integration(t *testing.T) {
 	expressionAnalyzer := analyzer.New()
 	sectionExtractor := extractor.New(sectionTaker, sectionNormalizer, sectionPartitioner, expressionAnalyzer)
 	variablesReplacer := replacer.New()
-	funcCaller := caller.New()
-	letResolver := resolver.NewLetResolver()
+	funcCaller := caller.New(uuidFactory, dateFactory)
+	letResolver := resolver.NewLetResolver(uuidFactory, dateFactory)
 	theParser := parser.New(doFileReader, commentCleaner, sectionExtractor, variablesReplacer, funcCaller, letResolver)
 
 	for _, tc := range testCases {

@@ -1,6 +1,9 @@
 package resolver
 
-import "github.com/jibaru/do/internal/types"
+import (
+	"github.com/jibaru/do/internal/types"
+	"github.com/jibaru/do/internal/utils"
+)
 
 type LetResolver interface {
 	// Resolve resolves all variables and functions in the let section.
@@ -8,10 +11,18 @@ type LetResolver interface {
 }
 
 type letResolver struct {
+	uuidFactory utils.UuidFactory
+	dateFactory utils.DateFactory
 }
 
-func NewLetResolver() LetResolver {
-	return &letResolver{}
+func NewLetResolver(
+	uuidFactory utils.UuidFactory,
+	dateFactory utils.DateFactory,
+) LetResolver {
+	return &letResolver{
+		uuidFactory,
+		dateFactory,
+	}
 }
 
 func (r *letResolver) Resolve(sentences *types.Sentences) (*types.Sentences, error) {
@@ -70,7 +81,10 @@ func (r *letResolver) Resolve(sentences *types.Sentences) (*types.Sentences, err
 }
 
 func (r *letResolver) ResolveFunction(fn types.Func, key string, resolvedVariables *types.Sentences) error {
-	resolvedFn, err := fn.Resolve()
+	resolvedFn, err := fn.Resolve(
+		r.uuidFactory,
+		r.dateFactory,
+	)
 	if err != nil {
 		return err
 	}
@@ -82,6 +96,12 @@ func (r *letResolver) ResolveFunction(fn types.Func, key string, resolvedVariabl
 	case types.FileFunc:
 		fileFunc := resolvedFn.(types.FileFunc)
 		resolvedVariables.Set(key, fileFunc.Exec())
+	case types.UuidFunc:
+		uuidFunc := resolvedFn.(types.UuidFunc)
+		resolvedVariables.Set(key, uuidFunc.Exec())
+	case types.DateFunc:
+		dateFunc := resolvedFn.(types.DateFunc)
+		resolvedVariables.Set(key, dateFunc.Exec())
 	}
 
 	return nil

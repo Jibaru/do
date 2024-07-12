@@ -3,12 +3,17 @@ package resolver_test
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/jibaru/do/internal/parser/resolver"
 	"github.com/jibaru/do/internal/types"
+	"github.com/jibaru/do/internal/utils"
 )
 
 func TestLetResolver_Resolve(t *testing.T) {
+	uuid := "80aaa8e2-e2b9-4bd5-8124-4003d4a528df"
+	now := time.Now().UTC()
+
 	testCases := []struct {
 		name          string
 		variables     *types.Sentences
@@ -36,6 +41,21 @@ func TestLetResolver_Resolve(t *testing.T) {
 					Key:   "var3",
 					Value: types.ReferenceToVariable{Value: "var2"},
 				},
+				{
+					Key: "var4",
+					Value: types.Func{
+						Name: "uuid",
+					},
+				},
+				{
+					Key: "var5",
+					Value: types.Func{
+						Name: "date",
+						Args: []interface{}{
+							types.String("ISO8601"),
+						},
+					},
+				},
 			}),
 			expected: types.NewSentencesFromSlice([]types.Sentence{
 				{
@@ -49,6 +69,14 @@ func TestLetResolver_Resolve(t *testing.T) {
 				{
 					Key:   "var3",
 					Value: types.String("default"),
+				},
+				{
+					Key:   "var4",
+					Value: types.String(uuid),
+				},
+				{
+					Key:   "var5",
+					Value: types.String(now.Format(time.RFC3339)),
 				},
 			}),
 		},
@@ -99,7 +127,10 @@ func TestLetResolver_Resolve(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			r := resolver.NewLetResolver()
+			r := resolver.NewLetResolver(
+				utils.NewFixedUuidFactory(uuid),
+				utils.NewFixedDateFactory(now),
+			)
 			resolvedVariables, err := r.Resolve(tc.variables)
 
 			if err != nil && tc.expectedError == nil {

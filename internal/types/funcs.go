@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
+
+	"github.com/jibaru/do/internal/utils"
 )
 
 type EmptyArgError struct {
@@ -19,7 +22,13 @@ func (e EmptyArgError) Error() string {
 const (
 	FileFuncName = "file"
 	EnvFuncName  = "env"
+	UuidFuncName = "uuid"
+	DateFuncName = "date"
 )
+
+type DateGenerator interface {
+	Now() time.Time
+}
 
 type Func struct {
 	Name string
@@ -52,12 +61,19 @@ func (f Func) HasReferences() bool {
 	return false
 }
 
-func (f Func) Resolve() (interface{}, error) {
+func (f Func) Resolve(
+	uuidFactory utils.UuidFactory,
+	dateFactory utils.DateFactory,
+) (interface{}, error) {
 	switch f.Name {
 	case FileFuncName:
 		return NewFileFuncFromArgs(f.Args)
 	case EnvFuncName:
 		return NewEnvFuncFromArgs(f.Args)
+	case UuidFuncName:
+		return NewUuidFuncFromArgs(f.Args, uuidFactory)
+	case DateFuncName:
+		return NewDateFuncFromArgs(f.Args, dateFactory)
 	}
 
 	return nil, errors.New("unknown function")
@@ -134,4 +150,58 @@ func NewFileFunc(path String) (FileFunc, error) {
 
 func (f FileFunc) Exec() File {
 	return File{Path: string(f.Path)}
+}
+
+type UuidFunc struct {
+	UuidFactory utils.UuidFactory
+}
+
+func NewUuidFuncFromArgs(args []interface{}, uuidFactory utils.UuidFactory) (UuidFunc, error) {
+	if len(args) != 0 {
+		return UuidFunc{}, errors.New("invalid number of arguments for uuid")
+	}
+
+	return UuidFunc{
+		UuidFactory: uuidFactory,
+	}, nil
+}
+
+func (f UuidFunc) Exec() String {
+	return String(f.UuidFactory.New())
+}
+
+type DateFunc struct {
+	Format      String
+	DateFactory utils.DateFactory
+}
+
+func NewDateFuncFromArgs(args []interface{}, dateFactory utils.DateFactory) (DateFunc, error) {
+	if len(args) != 1 {
+		return DateFunc{}, errors.New("invalid number of arguments for date")
+	}
+
+	arg, ok := args[0].(String)
+	if !ok {
+		return DateFunc{}, errors.New("invalid argument type for date")
+	}
+
+	return NewDateFunc(arg, dateFactory)
+}
+
+func NewDateFunc(formatName String, dateFactory utils.DateFactory) (DateFunc, error) {
+	valid := map[string]string{
+		"ISO8601": "2006-01-02T15:04:05Z",
+	}
+
+	format, ok := valid[string(formatName)]
+
+	if !ok {
+		return DateFunc{}, errors.New("invalid date format")
+	}
+
+	return DateFunc{Format: String(format), DateFactory: dateFactory}, nil
+}
+
+func (f DateFunc) Exec() String {
+	return String(f.DateFactory.Now().UTC().Format(string(f.Format)))
 }
