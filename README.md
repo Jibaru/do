@@ -121,6 +121,8 @@ There are another values that only should be accepted in do section:
 | -------- | ------------------------------------------------------------------------------------- | ------------------------ |
 | env      | Get an environment variable. If the variable is not found, it returns a default value | env("MY_VAR", "default") |
 | file     | Get a file path. It is used for multipart requests.                                   | file("path/to/file.txt") |
+| date     | Generate a new string with the specified date format.                                 | date("ISO8601")          |
+| uuid     | Generate a new uuid v4 string.                                                        | uuid()                   |
 
 ### Do Section
 
