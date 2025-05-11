@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="screenshots/logo.png" width="180px"/>
+    <img src="screenshots/logo.png" width="170px"/>
     <p style="font-style: italic">HTTP Requests in plain text</p>
 </div>
 
